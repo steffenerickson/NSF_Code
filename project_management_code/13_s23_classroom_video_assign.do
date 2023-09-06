@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------//
 /*
 Title: Classroom Observation Assignment  
-Authors: Steffen Erikson
+Authors: Steffen Erickson
 Date: 05/16/23
 Purpose: This Do-File randomly assigns coders to classroom obsevation videos  
 

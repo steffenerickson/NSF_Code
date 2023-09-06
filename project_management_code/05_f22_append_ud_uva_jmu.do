@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------------*  
 /*
-Title: Append JMU, UVA, UD baseline and randomization data 
-Authors: Steffen Erikson 
+Title: Append JMU, UVA, UD FAll baseline and randomization data 
+Authors: Steffen Erickson 
 Date: 8/18/23
 
 */ 

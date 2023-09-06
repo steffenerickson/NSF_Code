@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------------*  
 /*
 Title: Assign Coders 
-*Authors: Steffen Erikson 
+*Authors: Steffen Erickson 
 *Date: 08/20/23
 *Purpose: Assign coders to rate participant videos for s23 sim videos 
 */ 
