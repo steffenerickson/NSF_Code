@@ -9,7 +9,7 @@
 						***** Run Cleaning Code ******
 
 * ssc install egenmore //uncomment if you do not have egenmore installed 
-global root_drive "/Users/steffenerickson/Desktop/repos/collab_rep_lab/nsf_v2"  // Change file path to master folder 
+global root_drive "/Users/steffenerickson/Documents/GitHub/NSF_Code/project_management_code"  // Change file path to master folder 
 global data_drive "/Users/steffenerickson/Desktop"
 
 cd $root_drive
@@ -17,7 +17,7 @@ do ${root_drive}/code/01_master.do
 
 frame dir 
 
-* unique ID for all datasets are participantid site semester 
+* unique ID for all datasets is participantid x site x semester 
 * all outcome data files are linked to the baseline data with participantid site semester 
 * baseline data contains treatment assignments, randomization blocks, and baseline survey info
 
