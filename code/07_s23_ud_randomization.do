@@ -1,7 +1,7 @@
  *------------------------------------------------------------------------------*  
 /*
-Title: Spring 2023 UD SITE Randomization and merge with baseline data 
-Authors: Steffen Erickson 
+Title: Spring 2023 UVA SITE Randomization and merge with baseline data 
+Authors: Steffen Erikson 
 Date: 8/18/23
 */ 
  *------------------------------------------------------------------------------*

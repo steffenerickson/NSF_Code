@@ -14,7 +14,8 @@
 
 mkf mqi
 frame mqi {
-import excel "outcome_data/NSF+MQI+Coding_June+7,+2023_09.03.xls", sheet("NSF+MQI+Coding_June+7,+2023_09.") firstrow case(lower) clear
+import excel "outcome_data/NSF+MQI+Coding_June+7,+2023_09.03.xls", ///
+sheet("NSF+MQI+Coding_June+7,+2023_09.") firstrow case(lower) clear
 
 //keep q2-q40 q10* q11_1
 drop in 2
@@ -143,7 +144,7 @@ label variable m1_4 "Section"
 label variable m1_5 "Participant ID"
 label variable m1_6 "Setting"
 
-/*
+
 
 //----------------------------------------------------------------------------//
 // Reshape multiple segments to long 
@@ -159,8 +160,18 @@ drop tag
 local var_stubs m5_1 m5_2 m5_3 m5_4 m5_5 m5_6 m5_7 m6_1 m6_2 m6_3 m7_1 ///
 m7_2 m7_3 m7_4 m8_1 m8_2 m8_3 m8_4 m8_5 m8_6 
 
+*save variable labels for segment codes 
+foreach v of local var_stubs {
+        local l`v' : variable label `v'1
+ }
+ 
 reshape long `var_stubs' , i(m1_2 m1_3 m1_5 m2_1) j(segment)
 
+foreach v of local var_stubs {
+        label var `v' "`l`v''"
+ }
+
+ label values m9_* 
 
 */
 
@@ -185,7 +196,7 @@ label variable m8_7 "Common_Core Aligned Student Practices (CCASP) - Mean Score"
 //----------------------------------------------------------------------------//
 
 *remove missing segments 
-//drop if m5_8 == .
+drop if m5_8 == .
 tab m1_2
 encode m1_2, gen(m1_2_2)
 drop m1_2

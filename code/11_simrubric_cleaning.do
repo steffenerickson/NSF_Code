@@ -11,7 +11,8 @@ Purpose: Data Cleaning - NSF Performance Task
 mkf simse_performance_tasks
 frame simse_performance_tasks {
 
-import excel "outcome_data/F22: NSF Performance Task Coding_September 1, 2023_13.14.xlsx", sheet("Sheet0") firstrow case(lower) clear
+*import excel "outcome_data/F22: NSF Performance Task Coding_September 1, 2023_13.14.xlsx", sheet("Sheet0") firstrow case(lower) clear
+import excel "outcome_data/F22: NSF Performance Task Coding_October 17, 2023_04.59.xlsx", sheet("Sheet0") firstrow case(lower) clear
 
 #delimit ; 
 drop in 1;
@@ -100,12 +101,13 @@ rename q39   os_categorical
 rename q19   use_visual
 rename sc0   os_rubric_sum
 rename q45 	 comment 
+rename q48	 model_num
 rename q9	 filename 
 
 *------------------------------------------------------------------------------*
 * Convert strings to encoded factor variables or numeric variables 
 *------------------------------------------------------------------------------*
-local varlist dc x1 x2 x3 x4 x5 x6 os_categorical use_visual 
+local varlist dc x1 x2 x3 x4 x5 x6 os_categorical use_visual model_num
 		   
 label define target 1 "Off Target" 2 "Approaching Target" 3 "On Target"
 foreach var in `varlist' {
@@ -123,7 +125,7 @@ foreach var of varlist x1-x6  {
 destring os_rubric_sum, replace 
 destring rater, replace 
 
-
+recode model_num (. = 1)
 
 sort semester participantid  site task time rater
 order semester participantid  site task time rater	
@@ -132,6 +134,8 @@ order semester participantid  site task time rater
 * Label Variables
 *------------------------------------------------------------------------------*
 
+
+label var model_num "Model Number. 1 if performance task"
 label var time "pre/post set"
 label var rater "Assigned Rater"
 label var participantid  "Participant ID"
@@ -148,7 +152,7 @@ label var os_rubric_sum "Simple sum of rubric scores" //do not use this variable
 											   //- not actually rubric score sum 
 
 											 
-drop q48 q49 comment progress finished q92 responseid responseid recordeddate
+drop q49 comment progress finished q92 responseid responseid recordeddate
 
 
 

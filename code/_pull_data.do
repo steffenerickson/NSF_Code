@@ -9,7 +9,7 @@
 						***** Run Cleaning Code ******
 
 * ssc install egenmore //uncomment if you do not have egenmore installed 
-global root_drive "/Users/steffenerickson/Documents/GitHub/NSF_Code/project_management_code"  // Change file path to master folder 
+global root_drive "/Users/steffenerickson/Desktop/repos/collab_rep_lab/nsf_v2"  // Change file path to master folder 
 global data_drive "/Users/steffenerickson/Desktop"
 
 cd $root_drive
@@ -17,7 +17,7 @@ do ${root_drive}/code/01_master.do
 
 frame dir 
 
-* unique ID for all datasets is participantid x site x semester 
+* unique ID for all datasets are participantid site semester 
 * all outcome data files are linked to the baseline data with participantid site semester 
 * baseline data contains treatment assignments, randomization blocks, and baseline survey info
 
@@ -34,7 +34,7 @@ frame dir
 //----------------------------------------------------------------------------//
 *baseline data 
 frame change nsf_baseline_data  
-*save ${data_drive}/nsf_baseline_data.dta, replace  // uncomment to save 
+*ave ${data_drive}/nsf_baseline_data.dta, replace  // uncomment to save 
 *export excel ${data_drive}/nsf_baseline_data.xlsx, replace firstrow(variables) // uncomment to save 
 //----------------------------------------------------------------------------//
 *performance tasks and baseline data 
@@ -109,13 +109,13 @@ frame mqi  {
             local l`v' "`v'"
         }
 	}
-	collapse m15_8 m16_4 m17_5 m18_7, by(participantid coaching semester site  section)
+	collapse m5_8 m6_4 m7_5 m8_7, by(participantid coaching semester site  section)
 	foreach v of var * {				//attach variable labels to collapsed vars 
         label var `v' "`l`v''"
 	}
 }
 * keep final self efficacy measure 
-frame finalsurvey: keep coaching participantid site section semester d126_1_2-d126_6_2
+frame finalsurvey: keep coaching participantid site section semester d126_1_2-d126_6_2 d126_1-d126_6
 * Merge files 
 frame full_outcome {
 	local dataframes performancetask mqi finalsurvey
@@ -163,7 +163,6 @@ frame mqi : sum d921b
 // function to access variables in other frames 
 frame mqi : generate d921c = frval(link2, d921)  
 frame mqi : sum d921c
-
 
 
 

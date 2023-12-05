@@ -13,7 +13,7 @@
 //----------------------------------------------------------------------------//
 mkf costi
 frame costi {
-import excel "outcome_data/COSTI-QCI Coding_August 25, 2023_11.43.xlsx", sheet("Sheet0") firstrow case(lower) clear
+import excel "outcome_data/COSTI-QCI Coding_December 5, 2023_05.49.xlsx", sheet("Sheet0") firstrow case(lower) clear
 keep finished q35-q12_8 sc*
 drop if length(q60) < 5
 

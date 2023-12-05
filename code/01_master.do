@@ -3,7 +3,7 @@
 * Author: Steffen Erickson
 * Date: 8/18/23
 *------------------------------------------------------------------------------*
-clear all 
+clear 
 frame reset
 /*
 folder structure  
@@ -72,16 +72,16 @@ do code/11_simrubric_cleaning.do
 * Data Verification 
 frame simse_performance_tasks {
 gen id_check = _n
-bysort participantid site semester rater task time: replace id_check = id_check[1]
+bysort participantid site semester rater task time model_num : replace id_check = id_check[1]
 egen dupes = tag(id_check)
-	* !!!!!!73 duplicates in the collected data !!!!!
+	* !!!!!!13 duplicates in the collected data !!!!!
 drop if dupes == 0
 drop id_check dupes 
 }
 * now checking for duplicates by dc variable instead of rater 
 frame simse_performance_tasks {
 gen id_check = _n
-bysort participantid site semester dc task time: replace id_check = id_check[1]
+bysort participantid site semester dc task time  model_num: replace id_check = id_check[1]
 egen dupes = tag(id_check)
 	* !!!!!!7 more  duplicates in the collected data !!!!!
 drop if dupes == 0
@@ -103,16 +103,16 @@ frame performancetask_and_baseline {
 * MQI -------------------------------------------------------------------------*
 
 * Collected data 
-do code/14_mqi_cleaning.do
+do code/14_mqi_cleaning_long_data.do
 
 * Merge MQI with baseline 
 frame nsf_baseline_data : frame put _all , into(mqi_and_baseline)
 frame mqi{
 	preserve
-	rename m11_2 site 
-	rename m11_3 semester
-	rename m11_5 participantid
-	drop m11_6 m11_4
+	rename m1_2 site 
+	rename m1_3 semester
+	rename m1_5 participantid
+	drop m1_6 m1_4
 	tempfile data 
 	save `data'
 	restore 
@@ -123,19 +123,20 @@ frame mqi_and_baseline {
 	drop _merge 
 }
 
+
 * COSTI -----------------------------------------------------------------------*
 
 * Collected data 
-do code/15_costi_cleaning.do
+do code/15_costi_cleaning_long_data.do
 
 * Merge COSTI with baseline 
 frame nsf_baseline_data : frame put _all , into(costi_and_baseline)
 frame costi {
 	preserve
-	rename c11_2 site 
-	rename c11_3 semester
-	rename c11_5 participantid
-	drop c11_6 c11_4
+	rename c1_2 site 
+	rename c1_3 semester
+	rename c1_5 participantid
+	drop c1_6 c1_4
 	tempfile data 
 	save `data'
 	restore 
@@ -197,72 +198,9 @@ frame finalsurvey_and_baseline  : frlink 1:1 participantid semester site, frame(
 
 
 
-/*
 
-/*
-* Simulation rater assignments 
-do code/09_f22_rater_assign.do
-do code/10_s23_rater_assign.do
-* Append files 
-frame f22_simrubric_raters: frame put _all , into(simrubric_raters_assignments)
-frame simrubric_raters_assignments {
-	frame s23_simrubric_raters {
-		tempfile data 
-		save `data'
-	}
-	append using `data', gen(semester)
-	label define sems 0 "F22" 1 "S23"
-	label values semester semsester 
-}
 
-* Classroom Placement rater assignments 
-*do code/
 
-* Sim Rubric data cleaning 
-do code/11_simrubric_cleaning.do
-
-* Data Verification 
-
-* Check assignments vs collected data 
-frame simse_performance_tasks {
-gen id_check = _n
-bysort participantid site semester rater task time: replace id_check = id_check[1]
-egen dupes = tag(id_check)
-	* !!!!!!73 duplicates in the collected data !!!!!
-drop if dupes == 0
-drop id_check dupes 
-}
-* now checking for dupilcates by dc variable instead of rater 
-frame simse_performance_tasks {
-gen id_check = _n
-bysort participantid site semester dc task time: replace id_check = id_check[1]
-egen dupes = tag(id_check)
-	* !!!!!!7 more  duplicates in the collected data !!!!!
-drop if dupes == 0
-drop id_check dupes 
-}
-
-* rename and recode for matching
-frame simrubric_raters_assignments: rename coder rater
-frame simrubric_raters_assignments: rename double_code dc
-frame simrubric_raters_assignments: recode task (1 = 4) (2 = 5) (3 = 6) if time == 1
-
-*rename rater variable to compare assign vs. observed raters 
-frame simse_performance_tasks: rename rater rater_obs
-frame simrubric_raters_assignments: rename rater rater_assign
-
-*merge on double code 
-frame simrubric_raters_assignments: frame put _all, into(performancetask_and_baseline)
-frame performancetask_and_baseline {
-	frame simse_performance_tasks {
-		tempfile data 
-		save `data'
-	}
-	merge 1:m participantid semester site dc task using `data'
-	keep if _merge != 1 // Keeping placement videos that are not matched currently 
-}
-
-*/
 
 
 

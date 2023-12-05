@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------------*  
 /*
-Title: NSF Fall UVA SITE Randomization and merge with baseline data 
-Authors: Steffen Erickson 
+Title: NSF UVA SITE Randomization and merge with baseline data 
+Authors: Steffen Erikson 
 Date: 8/18/23
 */ 
 mkf uva_tracker 

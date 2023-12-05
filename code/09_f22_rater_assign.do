@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------------*  
 /*
 Title: Assign Coders 
-*Authors: Steffen Erickson 
+*Authors: Steffen Erikson 
 *Date: 08/20/23
 *Purpose: Assign coders to rate participant videos for f22 sim videos 
 */ 
