@@ -399,8 +399,6 @@ grc1leg g1 g2, rows(1) altshrink title("Decomposed Within Time Pairwise Item Cov
 // Connected time point design 
 //----------------------------------------------------------------------------// 
 
-
-
 frame copy graphing_covs2 graphing_covs2e , replace
 frame graphing_covs2e {
 mata: a = off_diag_key(st_matrix("covcomps1_2"))
@@ -467,19 +465,5 @@ bar(2, color("46 139 87")   fintensity(inten50)) name(g2,replace) yscale(range(-
 grc1leg g1 g2, rows(1) altshrink title("Decomposed Within and Between Time Pairwise Item Covariances")
 }
 
-   
-//----------------------------------------------------------------------------// 
-//----------------------------------------------------------------------------// 
 
-// Tables 
-
-//----------------------------------------------------------------------------// 
-//----------------------------------------------------------------------------// 
-
-   
-   * Need to include components of the differences 
-   
-   * include standard errors of the var and covar comps 
-   
-   
   

@@ -77,9 +77,6 @@ program mvgstudy , rclass
 	return matrix flproducts = flproducts 		
 	return matrix ems = ems
 	return matrix emcp = emcp
-	
-	
-	
 end 
 
 //----------------------------------------------------------------------------//
@@ -88,7 +85,7 @@ end
 //---------- recover manova results  ----------//
 capture program drop recovermanova
 program recovermanova , rclass 
-syntax ,  FACETS(varlist) FACETLEVELS(numlist) EFFECTS(string) RESIDUAL(string)
+	syntax ,  FACETS(varlist) FACETLEVELS(numlist) EFFECTS(string) RESIDUAL(string)
 
 	* recover manova results 
 	local a = e(cmdline) 
@@ -153,7 +150,6 @@ syntax ,  FACETS(varlist) FACETLEVELS(numlist) EFFECTS(string) RESIDUAL(string)
 	}
 	return matrix df = `df'
 	return matrix flproducts = `flproducts'
-
 end 
 
 //---------- create p matrix  ----------//
@@ -343,5 +339,32 @@ string matrix off_diag_key(real matrix cov_mat)
 	}
 	return(res)	
 }
+
+//------ satterthwaite confidence interval procedure ----- //
+real scalar is_colvec(z) return(anyof(("colvector","scalar"),orgtype(z)))
+void row_to_col(real vector v) 
+{
+    if (is_colvec(v) == 0) v = v'
+	else v = v 
+}
+real matrix satterthwaite(real vector variances,
+						  real vector df,
+						  real scalar ci_level)
+{
+	real colvector r, lower, upper 
+	real matrix res 
+
+	row_to_col(variances)
+	row_to_col(df)
+	
+	r = sqrt(df/2)
+	upper = variances:* (2*r:^2:/invchi2(df,(1-ci_level)/2))
+	lower = variances:* (2*r:^2:/invchi2(df,(1+ci_level)/2))
+	
+	res = lower , upper 
+	return(res) 
+}
+
+
 
 end 
