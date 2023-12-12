@@ -11,10 +11,8 @@
 
 capture program drop mvgstudy 
 program mvgstudy , rclass
-	syntax varlist [if] [in] , FACETS(varlist) 								 ///
-							   FACETLEVELS(numlist) 						 ///
-							   EFFECTS(string) 								 ///
-							   RESIDUAL(string)
+	syntax varlist [if] [in], FACETS(varlist) FACETLEVELS(numlist)			 ///
+							  EFFECTS(string) RESIDUAL(string)
 	tempname tempframe 
 	
 	local lengthdepvars	   :  list sizeof local(varlist)
@@ -33,6 +31,7 @@ program mvgstudy , rclass
 	frame `tempframe' {
 		manova `varlist' = `effects2'
 	}
+	estimates store manova_estimates
 	
 	* (2) Collect 
 	recovermanova , facets(`facets') facetlevels(`facetlevels') 			 ///
@@ -55,6 +54,8 @@ program mvgstudy , rclass
 		forvalues i = 1/`lengtheffectlist' { 
 			matrix covcomps`i' = r(covcomps`i')
 		} 
+		matrix ems = r(ems)
+		matrix emcp = r(emcp)
 		
 	* display results 
 	foreach x of local varlist {
@@ -73,7 +74,12 @@ program mvgstudy , rclass
 	}
 	return matrix P = P 
 	return matrix df = df 
-	return matrix flproducts = flproducts 
+	return matrix flproducts = flproducts 		
+	return matrix ems = ems
+	return matrix emcp = emcp
+	
+	
+	
 end 
 
 //----------------------------------------------------------------------------//
@@ -251,6 +257,8 @@ program emsmatrixproc, rclass
 	forvalues i = 1/`n' {
 		return matrix covcomps`i' = covcomps`i'
 	}
+	return matrix ems = ems 
+	return matrix emcp = emcp
 end 
 
 //----------------------------------------------------------------------------//
@@ -279,7 +287,7 @@ real matrix off_diag(real matrix cov_mat)
 	return(res)	
 }
 
-/----- rebuild covariance matrix  -----//
+//----- rebuild covariance matrix  -----//
 real matrix rebuild_matrix(real matrix cov_mat, 
 						    real matrix edited_covs,
 					        real matrix variances)
@@ -334,24 +342,6 @@ string matrix off_diag_key(real matrix cov_mat)
 		b++
 	}
 	return(res)	
-}
-
- //----- create a numeric version of the key  -----//
-real matrix numeric_key(string matrix key)
-{
-	string  scalar a, b
-	real     scalar i 
-	real    matrix res
-	string  matrix temp_key 
-	
-	for (i=1; i <= length(key) ; i++) {
-		a = substr(key[i,1], 1, 1) 
-		b = substr(key[i,1], 3, 1) 
-		if (i == 1) temp_key = (a,b)
-		else temp_key = temp_key \ (a,b)
-	}
-	res = strtoreal(temp_key)
-	return(res)
 }
 
 end 
