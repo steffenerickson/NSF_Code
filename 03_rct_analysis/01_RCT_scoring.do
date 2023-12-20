@@ -134,15 +134,6 @@ rename d12?_? d12?_?_1
 rename d12?_?_? d12?_?? 
 ds d*
 local list `r(varlist)'
-foreach var of local list  {
-	tempvar temp 
-	egen `temp' = std(`var') 
-	drop `var'
-	rename `temp' `var'
-	sum `var'
-}
-ds d*
-local list `r(varlist)'
 foreach word of local list {
 	local a = substr("`word'",1,6)
 	local list2 : list list2 | a
