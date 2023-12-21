@@ -1,13 +1,16 @@
 //----------------------------------------------------------------------------//
-//----------------------------------------------------------------------------//
 // NSF Main Paper Scoring procedures
 // Factor scores are estimated using the non-experimental sample when possible 
-//----------------------------------------------------------------------------//
+
+
+
+
 //----------------------------------------------------------------------------//
 clear all
 * Pull Study Data  
 do /Users/steffenerickson/Desktop/repos/collab_rep_lab/nsf_v2/_pull_data.do 
 frame dir 
+
 //-----------------------------------------------------------------------------//
 // Sim Rubric performance task scores
 //-----------------------------------------------------------------------------//
@@ -15,18 +18,38 @@ frame copy performancetask_and_baseline simrubric1 , replace
 frame change simrubric1
 
 * Data set up 
-keep x1-x6 site semester participantid task dc time 
+keep x1-x6 site semester participantid task dc time coaching
 recode task (4 = 1) (5 = 2) (6 = 3)
 drop if task == .
 drop if time == 2
 egen dupes = tag(participantid site semester time dc task)
 tab dupes
 drop if dupes == 0
+
+* create frequency weights (for post)
+frame copy simrubric1 temp, replace
+frame temp {
+	keep if (time == 1) & (coaching == 0 | coaching == 1)
+	egen simse1_fw = count(participantid) , by(participantid site semester) 
+	keep participantid site semester simse1_fw 
+	collapse simse1_fw , by(participantid site semester)
+	tab simse1_fw
+} 
+
+* reshape to a wide format 
 reshape wide x1-x6 , i(participantid site semester time dc) j(task)
 reshape wide x??   , i(participantid site semester time )  j(dc)
 
+global i1 x1?? // Setting the objective
+global i2 x2?? // Unpacking the word problem 
+global i3 x3?? // Self instruction
+global i4 x4?? // Self regulation
+global i5 x5?? // Ending the Model
+global i6 x6?? // Accuracy and Clarity
+
 * Scoring Model ----------------------
-sem (F1 -> x1??) (F2 -> x2??) (F3 -> x3??) (F4 -> x4??) (F5 -> x5??) (F6 -> x6??), group(time) ginvariant(mcons) method(mlmv) 
+sem (F1 -> ${i1})(F2 -> ${i2}) (F3 -> ${i3}) (F4 -> ${i4})(F5 -> ${i5})(F6 -> ${i6}), ///
+group(time) ginvariant(mcons) covstructure(_LEx, unstructured)  method(mlmv) 
 * ------------------------------------
 predict fx* , latent 
 
@@ -36,6 +59,12 @@ keep site semester participantid time fx*
 rename fx* x*
 reshape wide x* , i(site semester participantid) j(time)
 
+*merge weights back in 
+frame temp: tempfile data 
+frame temp: save `data'
+merge 1:1 participantid site semester using `data'
+drop _merge 
+
 * label variables
 local names Objective Unpacking Instruction Regulation Ending Accuracy
 forvalues j = 0/1 {
@@ -43,6 +72,9 @@ forvalues j = 0/1 {
 		label variable x`i'`j' "`:word `i' of `names'' (time `j')"
 	}
 }
+label variable simse1_fw "Simse Performance Task Frequency Weight"
+
+
 
 //-----------------------------------------------------------------------------//
 // Sim Rubric Placement  scores 
@@ -51,25 +83,50 @@ frame copy performancetask_and_baseline simrubric2 , replace
 frame change simrubric2
 
 * Data set up 
-keep x1-x6 site semester participantid task rater dc time model
+keep x1-x6 site semester participantid task rater dc time model 
 keep if time == 2
-collapse x* (count) simse_fw = x2, by(dc participantid site semester)
-reshape wide x* simse_fw,   i(participantid site semester) j(dc)
+
+* create frequency weights (for classroom obs.)
+frame copy simrubric2 temp, replace
+frame temp {
+	egen simse2_fw = count(participantid) , by(participantid site semester) 
+	keep participantid site semester simse2_fw
+	collapse simse2_fw , by(participantid site semester)
+	tab simse2_fw
+} 
+
+collapse x*, by(dc participantid site semester)
+reshape wide x* ,   i(participantid site semester) j(dc)
+
+global i1 x1? // Setting the objective
+global i2 x2? // Unpacking the word problem 
+global i3 x3? // Self instruction
+global i4 x4? // Self regulation
+global i5 x5? // Ending the Model
+global i6 x6? // Accuracy and Clarity
 
 * Scoring Model ----------------------
-sem (F1 -> x1* )(F2 -> x2* )(F3 -> x3* )(F4 -> x4* )(F5 -> x5* ) (F6 -> x6* ), method(mlmv) 	
+sem (F1 -> ${i1})(F2 -> ${i2}) (F3 -> ${i3}) (F4 -> ${i4})(F5 -> ${i5})(F6 -> ${i6}), ///
+covstructure(_LEx, unstructured) method(mlmv) 	
 * ------------------------------------
 predict fx* , latent 
 
+*merge weights back in 
+frame temp: tempfile data 
+frame temp: save `data'
+merge 1:1 participantid site semester using `data'
+drop _merge 
+
 * Clean and label
-rename simse_fw2 simse_fw
-keep site semester participantid  fx* simse_fw
+keep site semester participantid  fx* simse2_fw
 rename fx* fx*2 
 rename fx* x* 
 local names Objective Unpacking Instruction Regulation Ending Accuracy
 forvalues i = 1/6 {
 	label variable x`i'2 "`:word `i' of `names'' (time 2)"
 }
+label variable simse2_fw "Simse Classroom Observation Frequency Weight"
+
 
 //-----------------------------------------------------------------------------//
 // MQI 
@@ -78,16 +135,13 @@ frame copy mqi_and_baseline mqi , replace
 frame change mqi
 
 * Data set up 
-keep site semester participantid m* segment
-encode participantid , gen(ID)
-tab ID , m
-sort ID site semester
-egen id = group (ID site semester)
-global i1 m9_1-m9_9 // lesson_codes
-global i2 m5_1-m5_7 // richness 
-global i3 m6_1-m6_3 // working
-global i4 m7_1-m7_4 // errors
-global i5 m8_1-m8_6 // commoncore
+keep site semester participantid m9_1-m9_9 m5_1-m5_7 m6_1-m6_3 m7_1-m7_4 m8_1-m8_6 segment 
+
+global i1 m9* // lesson_codes
+global i2 m5* // richness 
+global i3 m6* // working
+global i4 m7* // errors
+global i5 m8* // commoncore
 
 * reverse coding errors 
 recode ${i4} (0 = 3) (1 = 2) (2 = 1) (3 = 0)
@@ -102,7 +156,7 @@ collapse (mean) $i1 $i2 $i3 $i4 $i5  (count) mqi_fw = m5_2, by(site semester par
 drop m5_5 
 
 * Scoring Model ----------------------
-sem (F1 -> ${i1}) (F2 -> ${i2}) (F3 -> ${i3}) (F5 -> ${i5}), method(mlmv) 
+sem (F1 -> ${i1}) (F2 -> ${i2}) (F3 -> ${i3}) (F5 -> ${i5}), covstructure(_LEx, unstructured) method(mlmv) 
 * ------------------------------------
 predict m1 m2 m3 m5, latent 
 
@@ -115,6 +169,7 @@ label variable m2 "Richness"
 label variable m3 "Working w/ Students"
 label variable m4 "Errors"
 label variable m5 "Common Core"
+label variable mqi_fw "MQI Classroom Observation Frequency Weight"
 keep site semester participantid m1 m2 m3 m4 m5 mqi_fw
 
 //-----------------------------------------------------------------------------//
@@ -141,8 +196,15 @@ foreach word of local list {
 local stubs : list uniq list2
 reshape long `stubs' , i(site semester participantid id coaching) j(time)
 
+global i1 d121* // Efficacy in instruction 
+global i2 d122* // Efficacy in professionalism 
+global i3 d123* // Efficacy in teaching supports 
+global i4 d124* // Efficacy in classroom management 
+global i5 d125* // Efficacy in related duties 
+
 * Scoring Model ----------------------
-sem (F1 -> d121* ) (F2 -> d122* )(F3 -> d123* ) (F4 -> d124* )(F5 -> d125* ), method(mlmv) group(time) ginvariant(mcons mcoef) 
+sem (F1 -> ${i1}) (F2 -> ${i2}) (F3 -> ${i3})(F4 -> ${i4})(F5 -> ${i5}), ///
+group(time) ginvariant(mcons mcoef) covstructure(_LEx, unstructured) method(mlmv)
 * ------------------------------------
 predict e* , latent 
 
@@ -166,9 +228,7 @@ forvalues i = 0/1 {
 frame copy baseline covs , replace
 frame change covs
 
-
 *MKT Content Score 
-
 foreach var of varlist d9* {
 	drop if `var' == 6
 }

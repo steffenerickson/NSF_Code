@@ -16,9 +16,7 @@ use rct_analytic.dta, replace
 //----------------------------------------------------------------------------//
 // Data set up 
 //----------------------------------------------------------------------------//
-
 rename coaching treat
-
 * create randomization block var 
 tab site semester
 egen block = group(site semester)
@@ -36,11 +34,15 @@ pca x?2
 predict x_overall2
 pca m?
 predict m_overall
+pca e?0
+predict e_overall0
+pca e?1
+predict e_overall1
 
 * Standardized Scores 
 ds 
 local all `r(varlist)'
-local remove coaching participantid site semester simse_fw mqi_fw block treat
+local remove coaching participantid site semester simse1_fw simse2_fw mqi_fw block treat
 local variables : list all - remove 
 foreach var of local variables {
 	local a : variable label `var'
@@ -52,13 +54,12 @@ foreach var of local variables {
 	label variable `var' "`a'"
 }
 
-
 * Create list of covariate variables
 ds 
 local all `r(varlist)'
 ds m* x*1 x*2
 local outcomes `r(varlist)'
-local remove coaching participantid site semester simse_fw2 mqi_fw treat m* x*1 x*2 `outcomes'
+local remove coaching participantid site semester simse1_fw simse2_fw mqi_fw treat m* x*1 x*2 `outcomes'
 local variables : list all - remove
 di "`variables'"
 global variables `variables'
@@ -89,26 +90,26 @@ save nsf_main_rct.dta, replace
 // Pooled AVERAGE TREATMENT EFFECTS //
 //----------------------------------------------------------------------------//
 *Baseline 
-regress x_overall1 i.treat i.block 
+regress x_overall1 i.treat i.block  [fweight = simse1_fw]
 
 *Pretest
-regress x_overall1 i.treat i.block x_overall0 x_overall0_im
+regress x_overall1 i.treat i.block x_overall0 x_overall0_im [fweight = simse1_fw]
 
-*pre test with baseline covariates
-regress x_overall1 i.treat i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im 
+*Pretest with baseline covariates
+regress x_overall1 i.treat i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im  [fweight = simse1_fw]
 
 //----------------------------------------------------------------------------//
 // Cohort AVERAGE TREATMENT EFFECTS TREATMENT EFFECTS //
 //----------------------------------------------------------------------------//
 *Cohort specific treatment effects
-regress x_overall1 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im 
+regress x_overall1 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse1_fw]
 xlincom (block1 =  _b[1.treat] + _b[1o.treat#1b.block]) ///
         (block2 =  _b[1.treat] + _b[1.treat#2.block]) 	///
 		(block3 =  _b[1.treat] + _b[1.treat#3.block])	///
 		(block4 =  _b[1.treat] + _b[1.treat#4.block]), post
 
-* differences fromt the grand mean 
-regress x_overall1 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im 
+* differences fromt the weighted grand mean 
+regress x_overall1 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse1_fw]
 contrasts jw.treat#g.block,  post 
 
 //----------------------------------------------------------------------------//
@@ -121,27 +122,27 @@ contrasts jw.treat#g.block,  post
 // Pooled AVERAGE TREATMENT EFFECTS //
 //----------------------------------------------------------------------------//
 *Baseline 
-regress x_overall2 i.treat i.block [fweight = simse_fw]
+regress x_overall2 i.treat i.block [fweight = simse2_fw]
 
 *Pretest
-regress x_overall2 i.treat i.block x_overall0 x_overall0_im [fweight = simse_fw]
+regress x_overall2 i.treat i.block x_overall0 x_overall0_im [fweight = simse2_fw]
 
-*pre test with baseline covariates
-regress x_overall2 i.treat i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
+*Pretest with baseline covariates
+regress x_overall2 i.treat i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
 
 //----------------------------------------------------------------------------//
 // Cohort AVERAGE TREATMENT EFFECTS TREATMENT EFFECTS //
 //----------------------------------------------------------------------------//
 *Cohort specific treatment effects
-regress x_overall2 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
+regress x_overall2 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
 xlincom (block1 =  _b[1.treat] + _b[1o.treat#1b.block]) ///
         (block2 =  _b[1.treat] + _b[1.treat#2.block]) 	///
 		(block3 =  _b[1.treat] + _b[1.treat#3.block])	///
 		(block4 =  _b[1.treat] + _b[1.treat#4.block]), post
 
 	
-* differences fromt the grand mean 
-regress x_overall1 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
+* differences fromt the weighted grand mean 
+regress x_overall1 i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
 contrasts jw.treat#g.block,  post 
 
 //----------------------------------------------------------------------------//
@@ -163,15 +164,15 @@ regress m_overall i.treat i.block e?0 c n? e?0_im c_im n?_im [fweight = mqi_fw]
 // Cohort AVERAGE TREATMENT EFFECTS TREATMENT EFFECTS //
 //----------------------------------------------------------------------------//
 *Cohort specific treatment effects
-regress m_overall i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
+regress m_overall i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
 xlincom (block1 =  _b[1.treat] + _b[1o.treat#1b.block]) ///
         (block2 =  _b[1.treat] + _b[1.treat#2.block]) 	///
 		(block3 =  _b[1.treat] + _b[1.treat#3.block])	///
 		(block4 =  _b[1.treat] + _b[1.treat#4.block]), post
 
 	
-* differences fromt the grand mean 
-regress m_overall i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
+* differences fromt the weighted grand mean 
+regress m_overall i.treat##i.block x_overall0 e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
 contrasts jw.treat#g.block,  post 
 
 
@@ -193,16 +194,22 @@ contrasts jw.treat#g.block,  post
 // Table 1 - Performance task simse
 //----------------------------------------------------------------------------//
 eststo clear 
-qui eststo, title("base"): regress x_overall1 i.treat i.block 
-qui eststo, title("+ pretest"): regress  x_overall1 i.treat i.block  x_overall0 x_overall0_im 
-qui eststo, title("+ baseline covs"): regress x_overall1 i.treat i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im 
+qui eststo, title("base"): regress x_overall1 i.treat i.block [fweight = simse1_fw]
+qui tab x_overall1  if x_overall1  != .
+estadd scalar a = r(r)
+qui eststo, title("+ pretest"): regress  x_overall1 i.treat i.block  x_overall0 x_overall0_im [fweight = simse1_fw]
+qui tab x_overall1  if x_overall1  != .
+estadd scalar a = r(r)
+qui eststo, title("+ baseline covs"): regress x_overall1 i.treat i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im [fweight = simse1_fw]
+qui tab x_overall1  if x_overall1  != .
+estadd scalar a = r(r)
 
 #delimit ;
 esttab using table_1.tex, 
 cells(b(star label(Coef.) fmt(a3)) se(label(SE) fmt(2) par))  				 
 label																	     
 mtitles("base" "+ pretest" "+ baseline covs") 								 
-stats( N r2 rmse, labels( "N. of cases" "R2" "RMSE" )) 						 
+stats( a r2 rmse, labels( "N. of cases" "R2" "RMSE" )) 						 
 title("SimSE Performance Task Scores Pooled Models")					     
 keep(1.treat 2.block 3.block 4.block x_overall0 							 
      c e10 e20 e40 e50 n1 n3 n4 n5 _cons) 									 
@@ -229,13 +236,13 @@ legend varlabels( 1.treat "Treatment"
 // Table 2 - classroom simse 	
 //----------------------------------------------------------------------------// 
 eststo clear 
-qui eststo, title("base"): regress x_overall2 i.treat i.block [fweight = simse_fw]
+qui eststo, title("base"): regress x_overall2 i.treat i.block [fweight = simse2_fw]
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
-qui eststo, title("+ pretest"): regress  x_overall2 i.treat i.block  x_overall0 x_overall0_im [fweight = simse_fw]
+qui eststo, title("+ pretest"): regress  x_overall2 i.treat i.block  x_overall0 x_overall0_im [fweight = simse2_fw]
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
-qui eststo, title("+ baseline covs"): regress x_overall2 i.treat i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
+qui eststo, title("+ baseline covs"): regress x_overall2 i.treat i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
 
@@ -315,16 +322,22 @@ legend varlabels( 1.treat "Treatment"
 // Table 4 -  performance task simse
 //----------------------------------------------------------------------------//					  	
 eststo clear 
-eststo, title("base"): regress x_overall1 i.treat##i.block 
-eststo, title("+ pretest"): regress  x_overall1 i.treat##i.block  x_overall0 x_overall0_im 
-eststo, title("+ baseline covs"): regress x_overall1 i.treat##i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im 
+eststo, title("base"): regress x_overall1 i.treat##i.block [fweight = simse1_fw]
+qui tab x_overall1  if x_overall1  != .
+estadd scalar a = r(r)
+eststo, title("+ pretest"): regress  x_overall1 i.treat##i.block  x_overall0 x_overall0_im [fweight = simse1_fw]
+qui tab x_overall1  if x_overall1  != .
+estadd scalar a = r(r)
+eststo, title("+ baseline covs"): regress x_overall1 i.treat##i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im [fweight = simse1_fw]
+qui tab x_overall1  if x_overall1  != .
+estadd scalar a = r(r)
 
 #delimit ;
 esttab using table_4.tex, 
 cells(b(star label(Coef.) fmt(a3)) se(label(SE) fmt(2) par))  
 label 
 mtitles("base" "+ pretest" "+ baseline covs") 
-stats( N r2 rmse, labels( "N. of cases" "R2" "RMSE" )) 
+stats( a r2 rmse, labels( "N. of cases" "R2" "RMSE" )) 
 title("SimSE Performance Task Scores Cohort x Treatment Interaction Models") 
 keep(1.treat 2.block  3.block 4.block 1.treat#2.block 1.treat#3.block 		
      1.treat#4.block x_overall0 c e10 e20 e40 e50 n1 n3 n4 n5 _cons ) 		
@@ -355,13 +368,13 @@ legend varlabels( 1.treat  "Treatment (F22 UVA)"
 // Table 5 -  classroom simse 	
 //----------------------------------------------------------------------------// 
 eststo clear 
-eststo, title("base"): regress x_overall2 i.treat##i.block [fweight = simse_fw]
+eststo, title("base"): regress x_overall2 i.treat##i.block [fweight = simse2_fw]
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
-eststo, title("+ pretest"): regress  x_overall2 i.treat##i.block  x_overall0 x_overall0_im [fweight = simse_fw]
+eststo, title("+ pretest"): regress  x_overall2 i.treat##i.block  x_overall0 x_overall0_im [fweight = simse2_fw]
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
-eststo, title("+ baseline covs"): regress x_overall2 i.treat##i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
+eststo, title("+ baseline covs"): regress x_overall2 i.treat##i.block  x_overall0 c e?0  n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
 
@@ -451,18 +464,18 @@ legend varlabels( 1.treat  "Treatment (F22 UVA)"
 //----------------------------------------------------------------------------//	
 eststo clear 
 *site effects 
-regress x_overall1 i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im 
-xlincom (jw1vs0.treat#g1.block  =  _b[1.treat] + _b[1o.treat#1b.block]) ///
-        (jw1vs0.treat#g2.block  =  _b[1.treat] + _b[1.treat#2.block]) 	///
-		(jw1vs0.treat#g3.block  =  _b[1.treat] + _b[1.treat#3.block])	///
-		(jw1vs0.treat#g4.block  =  _b[1.treat] + _b[1.treat#4.block]), post
+regress x_overall1 i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse1_fw]
+xlincom (jw1vs0.treat#gw1.block  =  _b[1.treat] + _b[1o.treat#1b.block]) ///
+        (jw1vs0.treat#gw2.block  =  _b[1.treat] + _b[1.treat#2.block]) 	///
+		(jw1vs0.treat#gw3.block  =  _b[1.treat] + _b[1.treat#3.block])	///
+		(jw1vs0.treat#gw4.block  =  _b[1.treat] + _b[1.treat#4.block]), post
 estimates store m1
 qui tab x_overall1  if x_overall1  != .
 estadd scalar a = r(r)
 
 * differences fromt the grand mean 
-regress x_overall1 i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im 
-contrasts jw.treat#g.block , post
+regress x_overall1 i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse1_fw]
+contrasts jw.treat#gw.block , post
 estimates store m2
 qui tab x_overall1  if x_overall1  != .
 estadd scalar a = r(r)
@@ -471,15 +484,15 @@ estadd scalar a = r(r)
 esttab m1 m2 using table_7.tex, 
 cells(b(star label(Coef.) fmt(a3)) se(label(SE) fmt(2) par)) 
 label  
-keep(jw1vs0.treat#g1.block  
-     jw1vs0.treat#g2.block 
-     jw1vs0.treat#g3.block 
-     jw1vs0.treat#g4.block ) 
-legend varlabels(jw1vs0.treat#g1.block "F22 UVA"     
-				 jw1vs0.treat#g2.block "S23 UVA"	
-				 jw1vs0.treat#g3.block "F22 UD"     
-                 jw1vs0.treat#g4.block "S23 UD")    
-mtitles("Cohort ITT" "Pooled ITT - Cohort ITT") 
+keep(jw1vs0.treat#gw1.block  
+     jw1vs0.treat#gw2.block 
+     jw1vs0.treat#gw3.block 
+     jw1vs0.treat#gw4.block ) 
+legend varlabels(jw1vs0.treat#gw1.block "F22 UVA"     
+				 jw1vs0.treat#gw2.block "S23 UVA"	
+				 jw1vs0.treat#gw3.block "F22 UD"     
+                 jw1vs0.treat#gw4.block "S23 UD")    
+mtitles("Cohort ITT" "Cohort ITT - Pooled ITT") 
 title("Simse Performance Task Scores ITT Contrasts") 
 stats(a, labels("N. of cases")) replace ;
 #delimit cr
@@ -490,18 +503,18 @@ stats(a, labels("N. of cases")) replace ;
 //----------------------------------------------------------------------------// 
 eststo clear 
 * site effects 
-regress x_overall2 i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
-xlincom (jw1vs0.treat#g1.block  =  _b[1.treat] + _b[1o.treat#1b.block]) ///
-        (jw1vs0.treat#g2.block  =  _b[1.treat] + _b[1.treat#2.block]) 	///
-		(jw1vs0.treat#g3.block  =  _b[1.treat] + _b[1.treat#3.block])	///
-		(jw1vs0.treat#g4.block  =  _b[1.treat] + _b[1.treat#4.block]), post
+regress x_overall2 i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
+xlincom (jw1vs0.treat#gw1.block  =  _b[1.treat] + _b[1o.treat#1b.block]) ///
+        (jw1vs0.treat#gw2.block  =  _b[1.treat] + _b[1.treat#2.block]) 	///
+		(jw1vs0.treat#gw3.block  =  _b[1.treat] + _b[1.treat#3.block])	///
+		(jw1vs0.treat#gw4.block  =  _b[1.treat] + _b[1.treat#4.block]), post
 estimates store m1
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
 
 * differences fromt the grand mean 
-regress x_overall2  i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse_fw]
-contrasts jw.treat#g.block , post
+regress x_overall2  i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = simse2_fw]
+contrasts jw.treat#gw.block , post
 estimates store m2
 qui tab x_overall2  if x_overall2  != .
 estadd scalar a = r(r)
@@ -510,15 +523,15 @@ estadd scalar a = r(r)
 esttab m1 m2 using table_8.tex, 
 cells(b(star label(Coef.) fmt(a3)) se(label(SE) fmt(2) par)) 
 label  
-keep(jw1vs0.treat#g1.block  
-     jw1vs0.treat#g2.block 
-     jw1vs0.treat#g3.block 
-     jw1vs0.treat#g4.block ) 
-legend varlabels(jw1vs0.treat#g1.block "F22 UVA"     
-				 jw1vs0.treat#g2.block "S23 UVA"	
-				 jw1vs0.treat#g3.block "F22 UD"     
-                 jw1vs0.treat#g4.block "S23 UD")    
-mtitles("Cohort ITT" "Pooled ITT - Cohort ITT") 
+keep(jw1vs0.treat#gw1.block  
+     jw1vs0.treat#gw2.block 
+     jw1vs0.treat#gw3.block 
+     jw1vs0.treat#gw4.block ) 
+legend varlabels(jw1vs0.treat#gw1.block "F22 UVA"     
+				 jw1vs0.treat#gw2.block "S23 UVA"	
+				 jw1vs0.treat#gw3.block "F22 UD"     
+                 jw1vs0.treat#gw4.block "S23 UD")    
+mtitles("Cohort ITT" "Cohort ITT - Pooled ITT") 
 title("SimSe Classroom Placement Score ITT Contrasts") 
 stats(a, labels("N. of cases")) replace;
 #delimit cr
@@ -529,17 +542,17 @@ stats(a, labels("N. of cases")) replace;
 eststo clear 	
 *site effects 
 regress m_overall i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = mqi_fw]
-xlincom (jw1vs0.treat#g1.block  =  _b[1.treat] + _b[1o.treat#1b.block]) ///
-        (jw1vs0.treat#g2.block  =  _b[1.treat] + _b[1.treat#2.block]) 	///
-		(jw1vs0.treat#g3.block  =  _b[1.treat] + _b[1.treat#3.block])	///
-		(jw1vs0.treat#g4.block  =  _b[1.treat] + _b[1.treat#4.block]), post
+xlincom (jw1vs0.treat#gw1.block  =  _b[1.treat] + _b[1o.treat#1b.block]) ///
+        (jw1vs0.treat#gw2.block  =  _b[1.treat] + _b[1.treat#2.block]) 	///
+		(jw1vs0.treat#gw3.block  =  _b[1.treat] + _b[1.treat#3.block])	///
+		(jw1vs0.treat#gw4.block  =  _b[1.treat] + _b[1.treat#4.block]), post
 estimates store m1
 qui tab m_overall  if m_overall  != .
 estadd scalar a = r(r)
 
 * differences fromt the grand mean 
 regress m_overall i.treat##i.block x_overall0 x_overall0_im e?0 c n? x_overall0_im e?0_im c_im n?_im [fweight = mqi_fw]
-contrasts jw.treat#g.block , post
+contrasts jw.treat#gw.block , post
 estimates store m2
 qui tab m_overall  if m_overall  != .
 estadd scalar a = r(r)
@@ -548,15 +561,15 @@ estadd scalar a = r(r)
 esttab m1 m2 using table_9.tex, 
 cells(b(star label(Coef.) fmt(a3)) se(label(SE) fmt(2) par)) 
 label  
-keep(jw1vs0.treat#g1.block  
-     jw1vs0.treat#g2.block 
-     jw1vs0.treat#g3.block 
-     jw1vs0.treat#g4.block ) 
-legend varlabels(jw1vs0.treat#g1.block "F22 UVA"     
-				 jw1vs0.treat#g2.block "S23 UVA"	
-				 jw1vs0.treat#g3.block "F22 UD"     
-                 jw1vs0.treat#g4.block "S23 UD")    
-mtitles("Cohort ITT" "Pooled ITT - Cohort ITT") 
+keep(jw1vs0.treat#gw1.block  
+     jw1vs0.treat#gw2.block 
+     jw1vs0.treat#gw3.block 
+     jw1vs0.treat#gw4.block ) 
+legend varlabels(jw1vs0.treat#gw1.block "F22 UVA"     
+				 jw1vs0.treat#gw2.block "S23 UVA"	
+				 jw1vs0.treat#gw3.block "F22 UD"     
+                 jw1vs0.treat#gw4.block "S23 UD")    
+mtitles("Cohort ITT" "Cohort ITT - Pooled ITT") 
 title("MQI Classroom Placement Score ITT Contrasts") 
 stats(a, labels("N. of cases")) replace;
 #delimit cr
