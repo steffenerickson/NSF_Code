@@ -420,6 +420,7 @@ real matrix rebuild_matrix(real matrix cov_mat,
 	for (i=(rows(cov_mat));i>=1;i--) {
 		b = i - 1
 		c = rows(cov_mat) - b 
+
 		for (x=1; x <= b; x++) {
 			r1 = x + k 
 			r2 = x + g
