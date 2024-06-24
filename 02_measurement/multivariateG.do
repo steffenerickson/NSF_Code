@@ -303,9 +303,6 @@ real matrix rebuild_matrix(real matrix cov_mat,
 			r1 = x + k 
 			r2 = x + g
 			res[r2,c] = edited_covs[r1,1]
-			if (res[r2,c] > 1) {
-				res[r2,c] = 1
-			}
 		}
 		k = k + b
 		g++ 
