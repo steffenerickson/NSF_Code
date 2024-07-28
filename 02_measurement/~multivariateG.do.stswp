@@ -26,10 +26,10 @@ program mvgstudy , rclass
 	mata facets = invtokens(facets')
 	mata st_local("facets",facets)
 	* Find Facet Levels
+	capture matrix drop facetlevels 
 	foreach facet of local facets {
 		qui levelsof `facet' if `touse' == 1
-		local temp = `r(r)'
-		local facetlevels : list facetlevels | temp 
+		matrix facetlevels = (nullmat(facetlevels) \ `r(r)')
 	}
 	* Find Residual 
 	mata residual = sort_desc_length(tokens(st_local("effects")))[1]
@@ -43,7 +43,7 @@ program mvgstudy , rclass
 	}
 	estimates store manova_estimates
 	* (2) Collect 
-	recovermanova, facets(`facets') facetlevels(`facetlevels') effects(`effects') residual(`residual')
+	recovermanova, facets(`facets') facetlevels(facetlevels) effects(`effects') residual(`residual')
 	matrix df = r(df)
 	matrix flproducts = r(flproducts)
 	forvalues i = 1/`lengtheffectlist' {
@@ -54,8 +54,9 @@ program mvgstudy , rclass
 	* (3) Create P matrix (EMCP equation matrix)
 	createP, effects(`effects') flproducts(flproducts)
 	matrix P = r(P)
+	mat li P
 	* (4) Expected Mean Cross Products (covariance components)
-	emcpmatrixprocedure, df(df) p(p) 		   
+	emcpmatrixprocedure, df(df) p(P) 		   
 	forvalues i = 1/`lengtheffectlist' { 
 		matrix covcomps`i' = r(comp`i')
 	}
@@ -83,7 +84,7 @@ end
 //---------- recover manova results  ----------//
 capture program drop recovermanova
 program recovermanova , rclass 
-	syntax ,  FACETS(varlist) FACETLEVELS(numlist) EFFECTS(string) RESIDUAL(string)
+	syntax ,  FACETS(varlist) FACETLEVELS(string) EFFECTS(string) RESIDUAL(string)
 
 	* recover manova results 
 	local a = e(cmdline) 
@@ -119,7 +120,7 @@ program recovermanova , rclass
 		* the product of the sample sizes for all indices in α̇}
 	local i = 1
 	foreach f of local facets {
-		local `f' = `:word `i' of `facetlevels''
+		local `f' = `facetlevels'[`i',1]
 		local facet_level_list: list facet_level_list | f
 		local++i 
 	}
@@ -198,19 +199,18 @@ program emcpmatrixprocedure, rclass
 	syntax,  DF(string) P(string) 
 	
 	capture matrix drop stacked
-	forvalues i = 1/`:colsof(p)' {
+	forvalues i = 1/`:colsof(`p')' {
 		scalar a = df[`i',1]
 		mata df = st_numscalar("a")
 		mata temp = st_matrix("sscp`i'")
 		mata mscp`i' = temp :/df
-		mata mscp`i'
 		mata st_matrix("mscp`i'",mscp`i')
 		matrix stacked = (nullmat(stacked) \ mscp`i')
 		local emcpname emcp`i'
 		local emcpnames : list emcpnames | emcpname
 	}
 	if `:colsof(stacked)' == 1 {
-		mata p = st_matrix("p")
+		mata p = st_matrix("`p'")
 		mata stacked = st_matrix("stacked")
 		mata ems = luinv(p) * stacked 
 		mata st_matrix("ems",ems)
@@ -220,12 +220,12 @@ program emcpmatrixprocedure, rclass
 		}
 	}
 	else {
-		mata p = st_matrix("p")
+		mata p = st_matrix("`p'")
 		mata stacked = st_matrix("stacked")
 		mata names = tokens(st_local("emcpnames"))
 		mata A = emcpmatrixprocedure(stacked,p,names)	
 		mata for (loc=asarray_first(A); loc!=NULL; loc=asarray_next(A, loc)) st_matrix(asarray_key(A, loc),asarray_contents(A, loc))
-		forvalues i = 1/`:colsof(p)'{
+		forvalues i = 1/`:colsof(`p')'{
 			return matrix comp`i' = emcp`i'
 		}
 	}
@@ -263,15 +263,15 @@ transmorphic matrix emcpmatrixprocedure(real matrix stacked, real matrix p, stri
 	real matrix rangemat, starting, ending, inv_p,temp,res
 	
 	emcp = asarray_create()   
-	skip = cols(p)
+	skip = cols(stacked)
 	rangemat = range(0,rows(stacked),skip)
 	starting = rangemat[1..(rows(rangemat)-1)]:+1
 	ending = rangemat[2..rows(rangemat)]
 	inv_p = luinv(p)
 	for(i=1;i<=cols(p);i++){
-		res = J(rows(p),cols(p),0)
+		res = J(cols(stacked),cols(stacked),0)
 		for(j=1;j<=cols(p);j++) {
-			temp = stacked[starting[j]..ending[j],1..cols(p)]
+			temp = stacked[starting[j]..ending[j],1..cols(stacked)]
 			res = res + (temp * inv_p[i,j])
 		}
 		asarray(emcp,names[i],res)
