@@ -2,8 +2,8 @@
 //----------------------------------------------------------------------------//
 // Multivariate G Study for Balanced Designs 
 // Author: Steffen Erickson
-// Date: 7/28/2024
-// Version 2
+// Date: 7/29/2024
+// Version 3
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 
@@ -77,20 +77,19 @@ program mvgstudy , rclass
 	return matrix df = df 
 	return matrix flproducts = flproducts 		
 end 
-//----------------------------------------------------------------------------//
-// stata sub-routines 
-//----------------------------------------------------------------------------//
-//---------- recover manova results  ----------//
-capture program drop recovermanova
-program recovermanova , rclass 
-	syntax ,  FACETS(varlist) FACETLEVELS(string) EFFECTS(string) RESIDUAL(string)
 
+//----------------------------------------------------------------------------//
+// Stata sub-routines 
+//----------------------------------------------------------------------------//
+capture program drop recovermanova
+program recovermanova, rclass 
+	syntax,  FACETS(string) FACETLEVELS(string) EFFECTS(string) RESIDUAL(string)
+	
 	* recover manova results 
 	local a = e(cmdline) 
 	local check = strrpos("`a'","=")
 	local newlist = substr("`a'",`check'+1,.)
 	local length : list sizeof local(newlist)
-	
 	local j = `length' + 1
 	forvalues i = 1/`j' {
 		local name sscp`i'
@@ -113,86 +112,36 @@ program recovermanova , rclass
 		local++i
 	}
 	matrix `sscp`j'' = e(E)
-	* Facet level products 
-		* Rule π(α̇) = 
-		* {1 if α = ω; and, otherwise, 
-		* the product of the sample sizes for all indices in α̇}
-	local i = 1
-	foreach f of local facets {
-		local `f' = `facetlevels'[`i',1]
-		local facet_level_list: list facet_level_list | f
-		local++i 
+	*facet level products
+	mata st_matrix("flproducts",get_facetlevelproducts(tokens(st_local("effects")),tokens(st_local("facets")),st_matrix("`facetlevels'")))
+	mat list flproducts
+	foreach x of local effects {
+		local name   "`x'"
+		local names `" `names' "`name'" "'
 	}
-	foreach effect of local effects {
-		local i = 1
-		foreach f of local facet_level_list {
-			local a = strpos("`effect'","`f'")
-			if `a' == 0 local temp = ``f''
-			else local temp = 1
-			if `i' == 1 local x = `temp'
-			else local x = `x' * `temp'
-			local++i
-		}
-		matrix `tempmat' = `x'
-		matrix rownames `tempmat' = "`effect'"
-		matrix `flproducts' = (nullmat(`flproducts') \ `tempmat')
-	}
+	matrix rownames flproducts = `names'
 	*return results 
 	forvalues i = 1/`j' {
 		return matrix sscp`i' = `sscp`i''
 	}
 	return matrix df = `df'
-	return matrix flproducts = `flproducts'
+	return matrix flproducts = flproducts
 end 
-//---------- create p matrix  ----------//
-capture program drop createP
-program createP , rclass 
-	syntax ,   EFFECTS(string) FLPRODUCTS(string)
 
-	*fill p matrix 
-	local n: list sizeof local(effects)
-	mata P =  uppertriangle(J(`n',`n',.))
-	mata st_matrix("P", P)
+capture program drop createP
+program createP, rclass 
+	syntax,   EFFECTS(string) FLPRODUCTS(string)
+	
+	mata st_matrix("P",get_p(tokens(st_local("effects")),st_matrix("`flproducts'")))
 	foreach x of local effects {
 		local name   "`x'"
 		local names `" `names' "`name'" "'
 	}
 	matrix rownames P = `names'
 	matrix colnames P = `names'
-	
-	local list1: rowfullnames P
-	local i = 1
-	foreach col of local list1 {
-		local j = `i' 
-		while (`j' >= 1) {
-			matrix P[`j',`i'] = `flproducts'[`i',1]
-			local--j
-		}
-		local++i
-	}
-	* Remove coefficients that are not in the EMS equations 
-	local list1: colfullnames P
-	foreach name of local list1 {
-		local i = 1
-		foreach cha in c. # ( ) | {
-			if `i' == 1 local stubs : subinstr local name  "`cha'" "", all
-			else 		local stubs : subinstr local stubs "`cha'" "", all
-			local++i
-		}
-		local list2 : list list2 | stubs
-	}
-	local rows: list sizeof local(list2)
-	local cols = `rows' - 1 
-	forvalues x = 1/`rows' {
-		forvalues y = 1/`cols' {
-			local a = strpos("`:word `y' of `list2''","`:word `x' of `list2''")
-			if `a' == 0  matrix P[`x', `y'] = 0 
-		}
-	}
-	*return P matrix 
 	return matrix P = P
 end 
-//---------- emcp matrix procedures  ----------//
+
 capture program drop emcpmatrixprocedure
 program emcpmatrixprocedure, rclass 
 	syntax,  DF(string) P(string) 
@@ -209,20 +158,15 @@ program emcpmatrixprocedure, rclass
 		local emcpnames : list emcpnames | emcpname
 	}
 	if `:colsof(stacked)' == 1 {
-		mata p = st_matrix("`p'")
-		mata stacked = st_matrix("stacked")
-		mata ems = luinv(p) * stacked 
+		mata ems = luinv(st_matrix("`p'")) * st_matrix("stacked") 
 		mata st_matrix("ems",ems)
-		forvalues i = 1/`:colsof(p)'{
+		forvalues i = 1/`:colsof(`p')'{
 			matrix comp`i' = ems[`i',1]
 			return matrix comp`i' = comp`i'
 		}
 	}
 	else {
-		mata p = st_matrix("`p'")
-		mata stacked = st_matrix("stacked")
-		mata names = tokens(st_local("emcpnames"))
-		mata A = emcpmatrixprocedure(stacked,p,names)	
+		mata A = emcpmatrixprocedure(st_matrix("stacked"),st_matrix("`p'"),tokens(st_local("emcpnames")))	
 		mata for (loc=asarray_first(A); loc!=NULL; loc=asarray_next(A, loc)) st_matrix(asarray_key(A, loc),asarray_contents(A, loc))
 		forvalues i = 1/`:colsof(`p')'{
 			return matrix comp`i' = emcp`i'
@@ -234,7 +178,6 @@ end
 // mata sub-routines 
 //----------------------------------------------------------------------------//
 mata
-// sort_desc_length() sort and insert algorithm
 string matrix sort_desc_length(string vector M)
 {
 	real   scalar 		i,j
@@ -254,7 +197,50 @@ string matrix sort_desc_length(string vector M)
 	}
 	return(res)
 }
-//-------------- EMCP matrix procedure ---------------- //
+
+// Rule π(α̇) = {1 if α = ω; and, otherwise, the product of the sample sizes for all indices in α̇}
+real vector get_facetlevelproducts(string vector effects, string vector facets, real vector fls)
+{
+	real scalar 		flp,x,i,j
+	real vector         flps
+	
+	flps = J(1,length(effects),.)
+	for(i=1;i<=length(effects);i++) {
+		flp = 1 
+		for(j=1;j<=length(facets);j++) {
+			if (strpos(effects[i],facets[j]) == 0) x = fls[j]
+			else x = 1
+			flp = flp * x 
+		}
+		flps[i] = flp 
+	}
+	flps = flps'
+	return(flps)
+	flps
+}
+
+real matrix get_p(string vector effects, real vector flproducts)
+{
+	string rowvector 	effects_stripped
+	real scalar 		row, col 
+	
+	effects_stripped = tokens(subinstr(subinstr(invtokens(effects),"|",""), "#",""))
+	P = J(length(effects_stripped),length(effects_stripped),0)
+	for(col=1;col<=length(effects_stripped);col++){
+		row = col
+		while (row >= 1) {
+			P[row, col] = flproducts[col]
+			--row
+		}
+	}
+	for(row=1;row<=length(effects_stripped);row++) {
+		for(col=1;col<=length(effects_stripped)-1;col++) {
+			if (strpos(effects_stripped[col],effects_stripped[row])== 0) P[row,col] = 0 
+		}
+	}
+	return(P)
+}
+
 transmorphic matrix emcpmatrixprocedure(real matrix stacked, real matrix p, string matrix names)
 {
 	transmorphic matrix emcp
@@ -277,14 +263,15 @@ transmorphic matrix emcpmatrixprocedure(real matrix stacked, real matrix p, stri
 	}
 	return(emcp)
 }
-//------ Column vector check  -----//
+
 real scalar is_colvec(z) return(anyof(("colvector","scalar"),orgtype(z)))
+
 void row_to_col(real vector v) 
 {
     if (is_colvec(v) == 0) v = v'
 	else v = v 
 }
-//------ satterthwaite confidence interval procedure ----- //
+
 real matrix satterthwaite(real vector variances,
 						  real vector df,
 						  real scalar ci_level)
@@ -300,7 +287,7 @@ real matrix satterthwaite(real vector variances,
 	res = lower , upper 
 	return(res) 
 }
-//---------- Return off diagonal from covariance matrix ----------//
+
 real matrix off_diag(real matrix cov_mat)
 {
 	real scalar v, a, b, c, r, i, x
@@ -320,7 +307,7 @@ real matrix off_diag(real matrix cov_mat)
 	}
 	return(res)	
 }
-//----- rebuild covariance matrix  -----//
+
 real matrix rebuild_matrix(real matrix cov_mat, 
 						    real matrix edited_covs,
 					        real matrix variances)
@@ -348,7 +335,6 @@ real matrix rebuild_matrix(real matrix cov_mat,
 	return(res)
 } 
 
-//----- Return key for off_diag vector -----//
 string matrix off_diag_key(real matrix cov_mat)
 {
 	real   scalar v, a, b, c, r, i, x
