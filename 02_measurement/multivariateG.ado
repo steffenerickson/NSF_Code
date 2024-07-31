@@ -2,15 +2,14 @@
 //----------------------------------------------------------------------------//
 // Multivariate G Study for Balanced Designs 
 // Author: Steffen Erickson
-// Date: 7/29/2024
-// Version 3
+// Date: 7/28/2024
+// Version 2
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 
 //----------------------------------------------------------------------------//
 // Main Routine 
 //----------------------------------------------------------------------------//
-mata mata clear
 capture program drop mvgstudy 
 program mvgstudy , rclass
 	syntax varlist [if] [in] , EFFECTS(string) 
@@ -222,6 +221,7 @@ real matrix get_p(string vector effects, real vector flproducts)
 {
 	string rowvector 	effects_stripped
 	real scalar 		row, col 
+	real matrix 		P
 	
 	effects_stripped = tokens(subinstr(subinstr(invtokens(effects),"|",""), "#",""))
 	P = J(length(effects_stripped),length(effects_stripped),0)
@@ -242,9 +242,10 @@ real matrix get_p(string vector effects, real vector flproducts)
 
 transmorphic matrix emcpmatrixprocedure(real matrix stacked, real matrix p, string matrix names)
 {
-	transmorphic matrix emcp
-	real scalar skip 
-	real matrix rangemat, starting, ending, inv_p,temp,res
+	transmorphic matrix 	emcp
+	real scalar 			skip 
+	real matrix 			rangemat, starting, ending, inv_p,temp,res
+	real scalar 			i, j
 	
 	emcp = asarray_create()   
 	skip = cols(stacked)

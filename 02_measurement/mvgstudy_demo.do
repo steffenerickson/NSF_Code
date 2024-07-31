@@ -1,4 +1,4 @@
-qui include multivariateG.do
+qui include multivariateG.ado
 capture program drop remove_last
 program remove_last, rclass
 syntax varlist 
@@ -41,4 +41,6 @@ rename `temp' `facet'
 version 16: table p r t, c(mean x1 mean x2)
 
 mvgstudy x*, effects(p t p#t r|t p#r|t)
+
+
 
