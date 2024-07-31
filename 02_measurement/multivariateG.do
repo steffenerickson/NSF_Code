@@ -114,7 +114,6 @@ program recovermanova, rclass
 	matrix `sscp`j'' = e(E)
 	*facet level products
 	mata st_matrix("flproducts",get_facetlevelproducts(tokens(st_local("effects")),tokens(st_local("facets")),st_matrix("`facetlevels'")))
-	mat list flproducts
 	foreach x of local effects {
 		local name   "`x'"
 		local names `" `names' "`name'" "'
