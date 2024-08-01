@@ -23,12 +23,12 @@ program permutations, rclass
 			}
 			local++x	
 		}
-		mkmat * , matrix(`v') rowprefix(perm)
+		mkmat *, matrix(`v') rowprefix(perm)
 	}
 	return matrix permutations = `v'
 end 
 
-* Rater Assignment 
+* rater assignment 
 clear
 set seed 1234 
 permutations, n(8) k(6)
@@ -38,10 +38,10 @@ gen randnum = runiform()
 sort randnum
 keep in 1/100 
 drop randnum
-rename x* (x_t1_r1 x_t1_r2 x_t2_r1 x_t2_r2 x_t3_r1 x_t3_r2)
+rename (x*) (x_t1_r1 x_t1_r2 x_t2_r1 x_t2_r2 x_t3_r1 x_t3_r2)
 gen p = _n
 reshape long x_t1 x_t2 x_t3, i(p) j(r) string 
-reshape long x , i(p r) j(t) string 
+reshape long x, i(p r) j(t) string 
 tab x 
-version 16 : table p t r  if p < 6 , c(mean x)
+version 16 : table p t r  if p < 6, c(mean x)
 
