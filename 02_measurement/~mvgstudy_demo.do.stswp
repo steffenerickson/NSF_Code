@@ -1,4 +1,4 @@
-mata mata clear 
+mata mata cle
 qui include multivariateG.ado
 capture program drop remove_last
 program remove_last, rclass
