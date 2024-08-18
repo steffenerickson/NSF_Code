@@ -43,6 +43,7 @@ program mvgstudy , rclass
 	local effects2 : list effects - residual
 	// Main Routine ----------
 	* (1) Run manova
+	//qui manova `varlist' = `effects2' if `touse' == 1
 	frame put `varlist' `facets' if `touse' == 1, into(`tempframe')
 	frame `tempframe' {
 		qui manova `varlist' = `effects2'
@@ -81,7 +82,8 @@ program mvgstudy , rclass
 	}
 	return matrix P = P 
 	return matrix df = df 
-	return matrix flproducts = flproducts 		
+	return matrix flproducts = flproducts 	
+	return local  manova_estimates manova_estimates
 end 
 
 //----------------------------------------------------------------------------//
