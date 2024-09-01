@@ -9,11 +9,11 @@
 						***** Run Cleaning Code ******
 
 * ssc install egenmore //uncomment if you do not have egenmore installed 
-global root_drive "/Users/steffenerickson/Desktop/repos/collab_rep_lab/nsf_v2"  // Change file path to master folder 
-global data_drive "/Users/steffenerickson/Desktop"
+global root_drive "/Users/steffenerickson/Box Sync/NSF_DR_K12/data_management"  // Change file path to master folder 
+global code "/Users/steffenerickson/Documents/GitHub/NSF_Code/01_project_managment"
 
-cd $root_drive
-do ${root_drive}/code/01_master.do
+cd "$root_drive"
+do ${code}/01_master.do
 
 frame dir 
 
@@ -63,7 +63,7 @@ frlink describe link4
 //----------------------------------------------------------------------------//
 
 
-
+/*
 						****** Example Data Pull *******
 
 

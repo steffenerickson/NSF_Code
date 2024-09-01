@@ -1,20 +1,21 @@
 clear all
-global root     "/Users/steffenerickson/Desktop/summer2024/nsf/full_routine"
-global code     "code"
+global root     "/Users/steffenerickson/Box Sync/NSF_DR_K12/rct"
+global code     "/Users/steffenerickson/Documents/GitHub/NSF_Code/03_rct_analysis/code"
 global data     "data"
 global output   "output"
+
 
 * Import files 
 local filelist : dir "${root}/${output}/" files "*.dta"
 if `:word count `filelist'' < 3 {
-	do ${root}/${code}/02_data_set_up.do
+	do "${code}/02_data_set_up.do"
 }
 frame reset 
 local filelist : dir "${root}/${output}/" files "*.dta"
 local i = 1 
 foreach file of local filelist {
 	mkf fr`i'
-	frame fr`i' : use ${root}/${output}/`file' , clear
+	frame fr`i' : use "${root}/${output}/`file'" , clear
 	local++i
 }
 
@@ -70,7 +71,7 @@ legend varlabels( 1.t "ITT") noisily replace;
 		
 		
 #delimit ;
-esttab using ${root}/${output}/table1.rtf , 
+esttab using "${root}/${output}/table1.rtf" , 
 cells(b(star label(Coef.) fmt(a3)) se(label(SE) fmt(2) par))  				 
 label																	     
 mtitles("Performance Task Meta. Model" "Classroom Meta. Model" "Classroom QCI" "Classroom MQI" ) 								 

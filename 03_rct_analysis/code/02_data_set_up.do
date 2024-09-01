@@ -2,33 +2,30 @@
 //Set up 
 //----------------------------------------------------------------------------//
 clear all
-global root     "/Users/steffenerickson/Desktop/summer2024/nsf/full_routine"
-global datapull "/Users/steffenerickson/Desktop/repos/collab_rep_lab/nsf_v2/_pull_data.do"
-global code     "code"
+global root     "/Users/steffenerickson/Box Sync/NSF_DR_K12/rct"
+global datapull "/Users/steffenerickson/Documents/GitHub/NSF_Code/01_project_managment/_pull_data.do"
+global code     "/Users/steffenerickson/Documents/GitHub/NSF_Code/03_rct_analysis/code"
 global data     "data"
 global output   "output"
-include "${root}/${code}/00_missing_data.do"
+include "${code}/00_missing_data.do"
 
 * Import files 
 local filelist : dir "${root}/${data}/" files "*.dta"
 if `:word count `filelist'' < 3 {
 	do ${datapull}
-	frame performancetask_and_baseline : save ${root}/${data}/performancetask_and_baseline.dta, replace 
-	frame costi_and_baseline : save ${root}/${data}/costi_and_baseline.dta, replace 
-	frame mqi_and_baseline   : save ${root}/${data}/mqi_and_baseline.dta, replace  
+	frame performancetask_and_baseline : save "${root}/${data}/performancetask_and_baseline.dta", replace 
+	frame costi_and_baseline : save "${root}/${data}/costi_and_baseline.dta", replace 
+	frame mqi_and_baseline   : save "${root}/${data}/mqi_and_baseline.dta", replace  
 }
 frame reset 
 local filelist : dir "${root}/${data}/" files "*.dta"
 local i = 1 
 foreach file of local filelist {
 	mkf fr`i'
-	frame fr`i' : use ${root}/${data}/`file' , clear
+	frame fr`i' : use "${root}/${data}/`file'" , clear
 	local++i
 }
 frame dir 
-
-
-frame change fr1
 
 //----------------------------------------------------------------------------//
 // Data Preparation 
@@ -50,15 +47,14 @@ forvalues i = 1/3 {
 		rename race_5 white
 		drop race_*
 		tab d161, gen(gender_)
-		rename gender_3 male
+		rename gender_2 male
 		drop gender_*
 		tab d168, gen(parentteach_)
-		rename parentteach_4 parentnotteach
+		rename parentteach_2 parentnotteach
 		drop parentteach_*
 		recode d169 (3 = 1) (2 = 0) (4/6 = 0)
 		recode d1610 (3 = 1) (2 = 0) (4/6 = 0)
 		gen parentcollege = (d169 == 1 | d1610 == 1)
-	
 	}		
 }
 		
@@ -142,11 +138,9 @@ forvalues i = 1/3 {
 	}
 }
 
-frame fr1: save ${root}/${output}/rct_qci, replace
-frame fr2: save ${root}/${output}/rct_mqi, replace
-frame fr3: save ${root}/${output}/rct_simse, replace 
-
-
+frame fr1: save "${root}/${output}/rct_qci", replace
+frame fr2: save "${root}/${output}/rct_mqi", replace
+frame fr3: save "${root}/${output}/rct_simse", replace 
 
 
 

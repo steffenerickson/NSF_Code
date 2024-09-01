@@ -543,12 +543,12 @@ destring d162 d167 d164, replace force
 * Pull in value and variable labels
 *------------------------------------------------------------------------------*
 * Value Labels
-do "code/00_valuelabels_baseline_demographics_nsf.do"
+do "${code}/00_valuelabels_baseline_demographics_nsf.do"
 label values d9* correctness 
 label values d105_* d106_* exp2
 label values d131* likert
 label values d15* likert3
-do "code/00_labelvar_baseline_demographics_nsf.do"
+do "${code}/00_labelvar_baseline_demographics_nsf.do"
 label_baseline_demographics_nsf
 *------------------------------------------------------------------------------*
 keep d*

@@ -8,7 +8,7 @@ Date: 8/18/23
  
  
 * Dependencies 
-do code/00_randomize_program.do
+do ${code}/00_randomize_program.do
 
 
 *frames 

@@ -8,7 +8,7 @@ frame reset
 /*
 folder structure  
 	  nsf_v2----|
-				|---- code 
+				|---- ${code} 
 				|---- demographics_data
 				|---- outcome_data
 				|---- randomization_files
@@ -24,7 +24,7 @@ folder structure
 * Pulls from demographics_data folder
 
 * Baseline survey -------------------------------------------------------------*
-do code/02_nsf_demographics.do
+do ${code}/02_nsf_demographics.do
 
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
@@ -35,14 +35,14 @@ do code/02_nsf_demographics.do
 * Pulls from trackers_data and randomization_files folders 
 
 * Fall Randomizations ---------------------------------------------------------*
-do code/03_f22_uva_randomization.do
-do code/04_f22_ud_randomization.do
-do code/05_f22_append_ud_uva_jmu.do
+do ${code}/03_f22_uva_randomization.do
+do ${code}/04_f22_ud_randomization.do
+do ${code}/05_f22_append_ud_uva_jmu.do
 
 * Spring Randomizations -------------------------------------------------------*
-do code/06_s23_uva_randomization.do
-do code/07_s23_ud_randomization.do
-do code/08_s23_append_ud_uva_jmu.do
+do ${code}/06_s23_uva_randomization.do
+do ${code}/07_s23_ud_randomization.do
+do ${code}/08_s23_append_ud_uva_jmu.do
 
 * Append Fall and Spring  -----------------------------------------------------*
 frame nsf_fall_baseline_data: frame put _all , into(nsf_baseline_data) 
@@ -67,7 +67,7 @@ frame nsf_baseline_data {
 * SIM Rubric ------------------------------------------------------------------*
 
 * Sim Rubric data cleaning 
-do code/11_simrubric_cleaning.do
+do ${code}/11_simrubric_cleaning.do
 
 * Data Verification 
 frame simse_performance_tasks {
@@ -103,7 +103,7 @@ frame performancetask_and_baseline {
 * MQI -------------------------------------------------------------------------*
 
 * Collected data 
-do code/14_mqi_cleaning_long_data.do
+do ${code}/14_mqi_cleaning_long_data.do
 
 * Merge MQI with baseline 
 frame nsf_baseline_data : frame put _all , into(mqi_and_baseline)
@@ -127,7 +127,7 @@ frame mqi_and_baseline {
 * COSTI -----------------------------------------------------------------------*
 
 * Collected data 
-do code/15_costi_cleaning_long_data.do
+do ${code}/15_costi_cleaning_long_data.do
 
 * Merge COSTI with baseline 
 frame nsf_baseline_data : frame put _all , into(costi_and_baseline)
@@ -150,7 +150,7 @@ frame costi_and_baseline {
 * Self-Efficacy ---------------------------------------------------------------*
 
 * Collected data 
-do code/16_final_survey_cleaning.do
+do ${code}/16_final_survey_cleaning.do
 
 * Merge COSTI with baseline 
 frame nsf_baseline_data : frame put _all , into(finalsurvey_and_baseline)

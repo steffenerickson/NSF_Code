@@ -10,7 +10,7 @@ Title: Assign Coders
 * Assigning Coders to Participant Videos
 *------------------------------------------------------------------------------*
 
-do code/00_permin_program.do
+do ${code}/00_permin_program.do
 mkf f22_simrubric_raters_temp
 *-----------------------*
 * Rater Assignment 

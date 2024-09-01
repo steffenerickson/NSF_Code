@@ -13,7 +13,7 @@
 //----------------------------------------------------------------------------//
 mkf costi
 frame costi {
-import excel "outcome_data/COSTI-QCI Coding_December 5, 2023_05.49.xlsx", ///
+import excel "outcome_data/COSTI-QCI Coding_March 19, 2024_07.15.xlsx", ///
 sheet("Sheet0") firstrow case(lower) clear
 keep finished q35-sc11
 drop if length(q60) < 5 // drop the test files
@@ -100,8 +100,6 @@ forvalues i = 1/6 {
 	replace c5_`i'4 = c5_`i'1[1] in 1
 }
 
-
-
 //----------------------------------------------------------------------------//
 // Label Variables
 //----------------------------------------------------------------------------//
@@ -123,8 +121,6 @@ foreach v in `r(varlist)' {
 	
 }
 drop in 1
-
-
 //----------------------------------------------------------------------------//
 // Encode / Label Values
 //----------------------------------------------------------------------------//
@@ -144,10 +140,13 @@ label values c6_* qci_levels
 
 ds c5* c7*
 loc vars1 `r(varlist)'
-destring `vars1' , replace 
+destring `vars1' , replace force
 
-recode c2_1 (1 = 10) (2 = 11) (3 = 12) (4 = 8) (5 = 9)
-label define Rater 8 "Rater 8" 9 "Rater 9" 10 "Rater 10" 11 "Rater 11" 12 "Rater 12" 
+recode c2_1 (2 = 10) (3 = 11) (4 = 12) (5 = 13) (6 = 8) (7 = 9)
+
+label define Rater ///
+1 "Rater 1" 2 "Rater 2" 3 "Rater 3" 4 "Rater 4" 5 "Rater 5" 6 "Rater 6"  7 "Rater 7" ///
+8 "Rater 8" 9 "Rater 9" 10 "Rater 10" 11 "Rater 11" 12 "Rater 12"  13 "Rater 13"
 label values c2_1 Rater
 
 tab c2_1
@@ -173,9 +172,54 @@ label variable c1_4 "Section"
 label variable c1_5 "Participant ID"
 label variable c1_6 "Setting"
 
+//----------------------------------------------------------------------------//
+// Reshape multiple segments to long 
+//----------------------------------------------------------------------------//
 
+egen tag = tag(c1_2 c1_3 c1_5 c2_1) 
+drop if tag == 0
+drop tag
 
+drop c7_1-c7_11
 
+global var_stubs c5_1 c5_2 c5_3 c5_4 c5_5 c5_6  ///
+                 c6_1 c6_2 c6_3 c6_4 c6_5 c6_6  c6_7  c6_8
+
+*save variable labels for segment codes 
+foreach v of global var_stubs {
+        local l`v' : variable label `v'1
+		di "`l`v''"
+}
+
+reshape long $var_stubs, i(c1_2 c1_3 c1_5 c2_1) j(segment)
+
+foreach v of global var_stubs {
+        label var `v' "`l`v''"
+ }
+
+//----------------------------------------------------------------------------//
+// More cleaning
+//----------------------------------------------------------------------------//
+
+tab c1_2
+encode c1_2, gen(c1_2_2)
+drop c1_2
+rename c1_2_2 c1_2
+label define sites 1 "UVA" 2 "UD" 3 "JMU"
+label values c1_2 sites 
+
+tab c1_2
+encode c1_3, gen(c1_3_2)
+drop c1_3
+rename c1_3_2 c1_3
+recode c1_3 (1=0) (2=1)
+label define sems 0 "F22" 1 "S23"
+label values c1_3 sems 
+
+drop if c5_1 == .
+ 
+
+/*
 //----------------------------------------------------------------------------//
 // Reshape multiple segments to long 
 //----------------------------------------------------------------------------//
@@ -203,7 +247,6 @@ foreach v of global var_stubs {
 // More cleaning
 //----------------------------------------------------------------------------//
 
-
 tab c1_2
 encode c1_2, gen(c1_2_2)
 drop c1_2
@@ -219,5 +262,6 @@ recode c1_3 (1=0) (2=1)
 label define sems 0 "F22" 1 "S23"
 label values c1_3 sems 
 
- 
+drop if c5_1 == .
+*/
 }
