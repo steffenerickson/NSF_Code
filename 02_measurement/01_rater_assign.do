@@ -24,7 +24,6 @@ program permutations, rclass
 	return matrix permutations = `v'
 end 
 
-
 * rater assignment 
 clear
 set seed 1234 
