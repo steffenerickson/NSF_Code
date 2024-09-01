@@ -5,9 +5,10 @@ clear all
 global root     "/Users/steffenerickson/Box Sync/NSF_DR_K12/rct"
 global datapull "/Users/steffenerickson/Documents/GitHub/NSF_Code/01_project_managment/_pull_data.do"
 global code     "/Users/steffenerickson/Documents/GitHub/NSF_Code/03_rct_analysis/code"
+global programs "/Users/steffenerickson/Documents/GitHub/stata_programs"
 global data     "data"
 global output   "output"
-include "${code}/00_missing_data.do"
+include "${programs}/impute_missing_dummy.do"
 
 * Import files 
 local filelist : dir "${root}/${data}/" files "*.dta"
@@ -42,7 +43,6 @@ forvalues i = 1/3 {
 		label values d156_1 d156_2 d156_3 d156_4 d156_5 d921 .
 		keep if t == 0 | t == 1
 		drop if block > 4
-		
 		tab d1611_1, gen(race_)
 		rename race_5 white
 		drop race_*
@@ -62,28 +62,27 @@ forvalues i = 1/3 {
 frame fr3 : egen simse = rowmean(x1 x2 x3 x4 x5 x6)
 frame fr3 :	egen  pre_simse =  mean(simse) if time == 0, by(id)
 frame fr3 :	frame put pre_simse id block, into(pretest) // use pretest scores for other datasets	
-frame fr3 :	frame put simse id block time, into(simse)  // use posttest scores for other datasets	
-frame simse: keep if time == 1
-frame simse: rename simse simse1
-frame simse: collapse simse1, by(id block)
+frame fr3 :	frame put simse id block time, into(posttest)  // use posttest scores for other datasets	
 frame pretest: collapse pre_simse , by(id block)
+frame posttest: keep if time == 1
+frame posttest: rename simse simse1
+frame posttest: collapse simse1, by(id block)
+
 
 * File specific manipulation including creating overall scores 
 *QCI
 frame fr1 {
 	rename c2_1 rater 
 	keep $covariates site section rater block id segment t c6_1 c6_2 c6_3 c6_4 c6_5 c6_6 c6_7 c6_8 
-	frame pretest: tempfile data
-	frame pretest: save  `data'
-	merge m:1 id block using `data'
-	drop _merge
-	frame simse: tempfile data
-	frame simse: save  `data'
-	merge m:1 id block using `data'
-	drop if _merge == 2
-	drop _merge 
 	egen qci = rowmean(c6_1 c6_2 c6_3 c6_4 c6_5 c6_6 c6_7 c6_8)
 	egen qci_s = std(qci)
+	foreach x in pretest posttest {
+		frame `x': tempfile data
+		frame `x': save  `data'
+		merge m:1 id block using `data'
+		drop if _merge == 2
+		drop _merge 
+	}
 }
 
 * Performance tasks
@@ -91,16 +90,14 @@ frame fr3 {
 	keep if time == 1 | 2
 	keep $covariates site section task time rater block id model_num t x1 x2 x3 x4 x5 x6 simse 
 	keep if t != 2
-	frame pretest: tempfile data
-	frame pretest: save  `data'
-	merge m:1 id block using `data'
-	drop _merge
-	frame simse: tempfile data
-	frame simse: save  `data'
-	merge m:1 id block using `data'
-	drop if _merge == 2
-	drop _merge 
 	egen simse_s = std(simse)
+	foreach x in pretest posttest {
+		frame `x': tempfile data
+		frame `x': save  `data'
+		merge m:1 id block using `data'
+		drop if _merge == 2
+		drop _merge 
+	}
 }
 
 *MQI 
@@ -115,15 +112,13 @@ frame fr2 {
 	keep $covariates site section rater block id domain* segment t 
 	egen mqi = rowmean(domain*)
 	egen mqi_s = std(mqi)
-	frame pretest: tempfile data
-	frame pretest: save  `data'
-	merge m:1 id block using `data'
-	drop _merge
-	frame simse: tempfile data
-	frame simse: save  `data'
-	merge m:1 id block using `data'
-	drop if _merge == 2
-	drop _merge 
+	foreach x in pretest posttest {
+		frame `x': tempfile data
+		frame `x': save  `data'
+		merge m:1 id block using `data'
+		drop if _merge == 2
+		drop _merge 
+	}
 }
 
 * Impute 0's for missing covariates and create a dummy indicator if the 
@@ -132,8 +127,8 @@ global covariates $covariates  pre_simse
 forvalues i = 1/3 {
 	frame fr`i' {
 		foreach var of global covariates  {
-			impute_mean `var'
-			replace `var' = 0 if `var'_im == 1
+			qui impute_mean `var'
+			qui replace `var' = 0 if `var'_im == 1
 		}
 	}
 }
