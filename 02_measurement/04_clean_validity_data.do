@@ -10,8 +10,6 @@ global programs "/Users/steffenerickson/Documents/GitHub/stata_programs"
 global data     "data"
 global output   "output"
 global nlp      "nlp_scoring_data"
-
-
 do ${datapull}
 
 //-----------------------------------------------------------------------------//
