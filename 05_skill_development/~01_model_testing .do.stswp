@@ -15,7 +15,6 @@ include ${programs}/mvgstudy.ado
 //----------------------------------------------------------------------------//
 // Arbitrary distribution function (weighted least squares)
 //----------------------------------------------------------------------------//
-
 use "${root}/${data}/manova_data.dta", clear
 rename (task rater coaching) (t r treat)
 label values treat . 
@@ -29,16 +28,10 @@ collapse x* , by(p treat block)
 recode treat (0 = 1) (1 = 2)
 drop if (x1 == . & x2 == . & x3 == . & x4 == . & x5 == .)
 
-sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , method(adf) //standardized
-estat gof, stats(all)
-sem ( F1 ->x1 x2@1 x3 x4 x5) , method(adf) 
-estat gof, stats(all)
-
-sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , method(adf) //group(treat) ginvariant(mcoef scoef) means(F1@0) 
-sem ( <- x1 x2 x3 x4 x5) , method(adf) //group(treat) ginvariant(mcoef scoef) means(F1@0) 
+sem ( <- x1 x2 x3 x4 x5) , method(adf) 
 estat framework, fitted
 mat true = r(Sigma)[1..5,1..5]
-sem ( <- x1 x2 x3 x4 x5) , group(treat) ginvariant(mcoef) 
+sem ( <- x1 x2 x3 x4 x5) , group(treat) ginvariant(mcoef) //method(adf) 
 mat mu0 = _b[/mean(x1)#1.treat],_b[/mean(x2)#1.treat],_b[/mean(x3)#1.treat],_b[/mean(x4)#1.treat],_b[/mean(x5)#1.treat]
 mat mu1 = _b[/mean(x1)#2.treat],_b[/mean(x2)#2.treat],_b[/mean(x3)#2.treat],_b[/mean(x4)#2.treat],_b[/mean(x5)#2.treat]
 mat observed = mu1 - mu0
@@ -52,9 +45,8 @@ ssd addgroup treat
 ssd set obs 76
 ssd set cov (stata) true
 ssd set means (stata) mu1
+
 sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , group(treat) var(/*e.x2@0*/ e.x3@0) ginvariant(mcoef scoef) means(F1@0)	//method(adf) //standardized		 
-
-
 testnl ((_b[x1:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x1:2.treat]  -  _b[x1:1.treat])))  
 testnl ((_b[x3:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x3:2.treat]  -  _b[x3:1.treat])))  
 testnl ((_b[x4:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x4:2.treat]  -  _b[x4:1.treat])))  
@@ -101,7 +93,6 @@ forvalues i = 1/5 {
 *mvgstudy (x1 x2 x3 x4 x5 = p t  p#t r|t p#r|t)
 *mat true   = r(covcomps1)
 *mat error  = r(covcomps2) + r(covcomps3) + r(covcomps4) + r(covcomps5) 
-
 sort p t r 
 by p : gen n = _n
 mvgstudy (x1 x2 x3 x4 x5 = p n|p)
@@ -142,3 +133,5 @@ mata st_matrix("modelimplied")
 mata: st_matrix("observed") - st_matrix("modelimplied")
  
  	
+	
+
