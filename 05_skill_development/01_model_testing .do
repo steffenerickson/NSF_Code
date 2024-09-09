@@ -26,6 +26,7 @@ egen p = group (id site semester)
 collapse x* , by(p treat block)
 recode treat (0 = 1) (1 = 2)
 drop if (x1 == . & x2 == . & x3 == . & x4 == . & x5 == .)
+sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , group(treat) ginvariant(mcoef scoef) means(F1@0)	
 
 sem ( <- x1 x2 x3 x4 x5) , method(adf) 
 estat framework, fitted
@@ -41,16 +42,17 @@ ssd set obs 71
 ssd set cov (stata) true
 ssd set means (stata) mu0
 ssd addgroup treat
-ssd set obs 76
+ssd set obs 75
 ssd set cov (stata) true
 ssd set means (stata) mu1
 
-sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , group(treat) var(/*e.x2@0*/ e.x3@0) ginvariant(mcoef scoef) means(F1@0)	//method(adf) //standardized		 
-testnl ((_b[x1:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x1:2.treat]  -  _b[x1:1.treat])))  
-testnl ((_b[x3:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x3:2.treat]  -  _b[x3:1.treat])))  
-testnl ((_b[x4:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x4:2.treat]  -  _b[x4:1.treat])))  
-testnl ((_b[x5:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x5:2.treat]  -  _b[x5:1.treat])))
- 
+sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , group(treat) ginvariant(mcoef scoef) means(F1@0)	//method(adf) //standardized		 
+testnl ((_b[x1:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x1:2.treat]  -  _b[x1:1.treat])))  ///
+       ((_b[x3:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x3:2.treat]  -  _b[x3:1.treat])))  ///
+       ((_b[x4:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x4:2.treat]  -  _b[x4:1.treat])))  ///
+       ((_b[x5:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x5:2.treat]  -  _b[x5:1.treat]))) 
+
+
 mat modelimplied = 	 (_b[x2:2.treat]  -  _b[x2:1.treat]) * _b[x1:2.treat#c.F1], ///
 					 (_b[x2:2.treat]  -  _b[x2:1.treat]) * _b[x2:2.treat#c.F1], ///
 					 (_b[x2:2.treat]  -  _b[x2:1.treat]) * (_b[x3:2.treat#c.F2] * _b[F2:2.treat#c.F1]), /// 
@@ -107,6 +109,13 @@ ssd addgroup treat
 ssd set obs 76
 ssd set cov (stata) true
 ssd set means (stata) mu1
+
+
+mata : cov = st_matrix("true")
+mata : means = (st_matrix("mu0") + st_matrix("mu1")):/2
+mata: mvnormalcv(1000,2000,means, cov)
+
+
 
 sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) ,  var(e.x3@0) group(treat)ginvariant(mcoef scoef) means(F1@0)	//method(adf) //standardized		 
 testnl ((_b[x1:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x1:2.treat]  -  _b[x1:1.treat])))  
