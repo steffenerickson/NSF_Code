@@ -233,7 +233,7 @@ global output   "skill_development/output"
 include ${programs}/mvgstudy.ado
 
 //----------------------------------------------------------------------------//
-// Using both time points 
+// Using both time 
 //----------------------------------------------------------------------------//
 use "${root}/${data}/manova_data.dta", clear
 rename (task rater coaching) (t r treat)
