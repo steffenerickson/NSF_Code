@@ -37,6 +37,7 @@ sem (F1 -> x1 x2@1 x5 x3 ) (x3 ->  x4)
 estimates store m3
 lrtest m1 m3
 
+
 sem ( <- x1 x2 x3 x4 x5) //, method(adf) 
 estat framework, fitted
 mat true = r(Sigma)[1..5,1..5]
@@ -55,7 +56,7 @@ ssd set obs  1000 // 75
 ssd set cov (stata) true
 ssd set means (stata) mu1
 
-sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , group(treat) ginvariant(mcoef scoef) means(F1@0)	//method(adf) //standardized		 
+sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4)  (F2 <- F1) , group(treat) ginvariant(mcoef scoef) means(F1@0)	//standardized	 
 testnl ((_b[x1:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x1:2.treat]  -  _b[x1:1.treat])))  ///
        ((_b[x3:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x3:2.treat]  -  _b[x3:1.treat])))  ///
        ((_b[x4:2.treat#c.F2] * _b[F2:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x4:2.treat]  -  _b[x4:1.treat])))  ///
@@ -86,6 +87,47 @@ mata st_matrix("observed")
 mata st_matrix("modelimplied")
 mata: st_matrix("observed") - st_matrix("modelimplied")
 
+sem (F1 -> x1 x2@1 x5 x3) (x3 -> x4) , group(treat) ginvariant(mcoef scoef) means(F1@0)	//method(adf) //standardized		 
+testnl ((_b[x1:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x1:2.treat]  -  _b[x1:1.treat])))  ///
+       ((_b[x3:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x3:2.treat]  -  _b[x3:1.treat])))  ///
+       ((_b[x4:2.treat#c.x3] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x4:2.treat]  -  _b[x4:1.treat])))  ///
+       ((_b[x5:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x5:2.treat]  -  _b[x5:1.treat]))) 
+	   
+	   
+testnl ((_b[x1:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x1:2.treat]  -  _b[x1:1.treat])))  
+testnl ((_b[x3:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x3:2.treat]  -  _b[x3:1.treat])))  
+testnl ((_b[x4:2.treat#c.x3]  * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x4:2.treat]  -  _b[x4:1.treat])))  
+testnl ((_b[x5:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x5:2.treat]  -  _b[x5:1.treat])))
+ 
+
+ 
+ 
+ 
+ 
+
+mat modelimplied = 	 (_b[x2:2.treat]  -  _b[x2:1.treat]) * _b[x1:2.treat#c.F1], ///
+					 (_b[x2:2.treat]  -  _b[x2:1.treat]) * _b[x2:2.treat#c.F1], ///
+					 (_b[x2:2.treat]  -  _b[x2:1.treat]) * (_b[x3:2.treat#c.F1]), /// 
+					 (_b[x2:2.treat]  -  _b[x2:1.treat]) * (_b[x4:2.treat#c.x3]), /// 
+					 (_b[x2:2.treat]  -  _b[x2:1.treat]) * _b[x5:2.treat#c.F1] 
+
+mat adjusted  = 	 (_b[x1:2.treat]  -  _b[x1:1.treat]) /  _b[x1:2.treat#c.F1], ///
+					 (_b[x2:2.treat]  -  _b[x2:1.treat]) /  _b[x2:2.treat#c.F1], ///
+					 (_b[x3:2.treat]  -  _b[x3:1.treat]) /  (_b[x3:2.treat#c.F1] ), /// 
+					 (_b[x4:2.treat]  -  _b[x4:1.treat]) /  (_b[x4:2.treat#c.x3]), /// 
+					 (_b[x5:2.treat]  -  _b[x5:1.treat]) /  _b[x5:2.treat#c.F1] 
+				 		
+mata st_matrix("adjusted")					 
+mata st_matrix("observed")
+mata st_matrix("modelimplied")
+mata: st_matrix("observed") - st_matrix("modelimplied")
+
+
+
+
+
+
+
 //---------- univariate model 
 
 sem (F1 -> x1 x2@1 x5 x3 x4) , group(treat) ginvariant(mcoef scoef) means(F1@0)	//method(adf) //standardized		 
@@ -101,9 +143,6 @@ testnl ((_b[x4:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:
 testnl ((_b[x5:2.treat#c.F1] * (_b[x2:2.treat]  -  _b[x2:1.treat]))  ==  (_b[x2:2.treat#c.F1] * (_b[x5:2.treat]  -  _b[x5:1.treat])))
  
 
- 
- 
- 
  
  
  
