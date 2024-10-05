@@ -45,6 +45,34 @@ sem (K -> k?) (F1 -> x1 x2@1 x5 x3 x4)
 estimates store m2
 lrtest m1 m2 
 
+
+sem (m2 <- t)
+
+sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) , standardized
+
+
+
+foreach v of varlist k? x? {
+	tempvar temp 
+	egen `temp' = std(`v')
+	replace `v' = `temp'
+}
+
+
+sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) //, standardized
+
+
+sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) (F1 x2 <- K) (F2 <- F1), var(e.x2@0) //, standardized
+
+
+
+sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) (F1 <- K t) (F2 <- F1) //, standardized
+estimates store m1 
+sem (K -> k?) (F1 -> x1 x2@1 x5 x3 x4) (F1 <- K t)  //, standardized
+estimates store m2 
+
+lrtest m1 m2 
+
 sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) (K F1 F2 -> m1), standardized
 sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) (K F1 F2 -> m1), standardized
 sem (K -> k?) (F1 -> x1 x2@1 x5 x3 x4) (K F1  -> m2), standardized
