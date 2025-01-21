@@ -368,7 +368,7 @@ foreach var of varlist d10* {
 	rename ``var'_2' `var'
 }
 label values d101_* exp
-recode d105_* d106_* (2 = 0) (5 = 1) (4 = 2) (3 = 3) (1 = 4)
+recode d10* (2 = 0) (5 = 1) (4 = 2) (3 = 3) (1 = 4)
 
 egen prior_scale_1 = rowmean(d101_*)
 egen prior_scale_2 = rowmean(d104_*)
