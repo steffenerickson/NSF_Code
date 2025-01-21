@@ -8,7 +8,7 @@ global code     "/Users/steffenerickson/Documents/GitHub/NSF_Code/03_rct_analysi
 global programs "/Users/steffenerickson/Documents/GitHub/stata_programs"
 global data     "data"
 global output   "output"
-include "${programs}/impute_missing_dummy.do"
+include "${programs}/impute_missing_dummy.ado"
 
 * Import files 
 local filelist : dir "${root}/${data}/" files "*.dta"
@@ -73,7 +73,7 @@ frame posttest: collapse simse1, by(id block)
 *QCI
 frame fr1 {
 	rename c2_1 rater 
-	keep $covariates site section rater block id segment t c6_1 c6_2 c6_3 c6_4 c6_5 c6_6 c6_7 c6_8 
+	keep $covariates site section rater block id segment t c6_1 c6_2 c6_3 c6_4 c6_5 c6_6 c6_7 c6_8 participantid semester
 	egen qci = rowmean(c6_1 c6_2 c6_3 c6_4 c6_5 c6_6 c6_7 c6_8)
 	egen qci_s = std(qci)
 	foreach x in pretest posttest {
@@ -88,7 +88,7 @@ frame fr1 {
 * Performance tasks
 frame fr3 {
 	keep if time == 1 | 2
-	keep $covariates site section task time rater block id model_num t x1 x2 x3 x4 x5 x6 simse 
+	keep $covariates site section task time rater block id model_num t x1 x2 x3 x4 x5 x6 simse  participantid semester
 	keep if t != 2
 	egen simse_s = std(simse)
 	foreach x in pretest posttest {
@@ -109,7 +109,7 @@ frame fr2 {
 	egen domain3  = rowmean(m6_1 m6_2 m6_3)
 	egen domain4  = rowmean(revm7_1 revm7_2 revm7_3 revm7_4)
 	egen domain5  = rowmean(m8_1 m8_2 m8_3 m8_4 m8_5 m8_6)
-	keep $covariates site section rater block id domain* segment t 
+	keep $covariates site section rater block id domain* segment t participantid semester
 	egen mqi = rowmean(domain*)
 	egen mqi_s = std(mqi)
 	foreach x in pretest posttest {

@@ -21,7 +21,7 @@ foreach file of local filelist {
 
 frame dir 
 
-global covariates d162 d167 d126_1 d126_2 d126_3 d126_4 d126_5 d132 d142 d156_1 d156_2 d156_3 d156_4 d156_5 d921 d107 pre_simse white male parentnotteach parentcollege 
+global covariates d162 d167 d126_1 d126_2 d126_3 d126_4 d126_5 d132 d142 d156_1 d156_2 d156_3 d156_4 d156_5 d921 d107 pre_simse white male //parentnotteach parentcollege 
 
 		
 //----------------------------------------------------------------------------//
@@ -29,28 +29,28 @@ global covariates d162 d167 d126_1 d126_2 d126_3 d126_4 d126_5 d132 d142 d156_1 
 //----------------------------------------------------------------------------//	
 
 eststo clear 
-qui eststo, title("ptmm"): frame fr3: regress simse_s i.t i.block i.task i.rater  $covariates *_im if time == 1, vce(cluster id)	
+eststo, title("ptmm"): frame fr3: regress simse_s i.t i.block i.task i.rater  $covariates *_im if time == 1, vce(cluster id)	
 frame fr3: qui tab id if simse_s != . & time == 1
 estadd scalar a = r(r)
 estadd local rater "X"
 estadd local segment "X"
 estadd local robust "X"
 
-qui eststo, title("cmm" ): frame fr3: regress simse_s i.t i.block i.rater i.model_num   $covariates *_im if time == 2, vce(cluster id)
+eststo, title("cmm" ): frame fr3: regress simse_s i.t i.block i.rater i.model_num   $covariates *_im if time == 2, vce(cluster id)
 frame fr3: qui tab id  if simse_s != . & time == 2
 estadd scalar a = r(r)
 estadd local rater "X"
 estadd local task "X"
 estadd local robust "X"
 
-qui eststo, title("cqci"): frame fr1: regress qci_s i.t i.block i.rater i.segment  $covariates *_im , vce(cluster id)
+eststo, title("cqci"): frame fr1: regress qci_s i.t i.block i.rater i.segment  $covariates *_im , vce(cluster id)
 frame fr1: qui tab id if qci_s != .
 estadd scalar a = r(r) 
 estadd local rater "X"
 estadd local task "X"
 estadd local robust "X"
 
-qui eststo, title("cmqi"): frame fr2: regress mqi_s i.t i.block i.rater i.segment $covariates *_im , vce(cluster id)
+eststo, title("cmqi"): frame fr2: regress mqi_s i.t i.block i.rater i.segment $covariates *_im , vce(cluster id)
 frame fr2: qui tab id if  mqi_s != .
 estadd scalar a = r(r) 
 estadd local rater "X"
@@ -109,6 +109,26 @@ title("Comparing Standardized Effect Sizes Across Measures With Declining Alignm
 yscale(range(-.1(.1)1.2)) ylabel(-.1(.1)1.2) ///
 coeflabels(ptmm = "Performance Task Meta. Model" cmm = "Classroom Meta. Model" cqci = "Classroom QCI" cmqi = "Classroom MQI" ) ///
 name(g1, replace) recast(connected) lcolor(black)
+
+
+
+
+// Version two of the plot 
+coefplot matrix(coefs), aux(4) ci((5 6)) vertical /// 
+mlabel("b = " + string(@b,"%9.3f") + (cond(@aux1<.01, "***", cond(@aux1<.05, "**", cond(@aux1<.10, "*", "")))))   ///
+msymbol(circle ) msize(medium) mcolor(eltgreen) mlcolor(black) ///
+ciopts(lcolor(ebblue)) ///
+ytitle("Standardized Effect Size") xtitle("Proximity") ///
+title("Effect Sizes Across Outcomes With Declining Proximity (Task + Instrument Alignment)" , size(medium)) ///
+yscale(range(-.1(.1)1.2)) ylabel(-.1(.1)1.2) ///
+coeflabels(ptmm = "SimSe" cmm = "SimSe" cqci = "QCI" cmqi = "MQI" ) ///
+xline(1.5) ///
+text(0 1.0 "Performance Task") text(0 3.0 "Classroom Task") ///
+note("*** p <.01, ** p <.05, * p <.10") ///
+name(g1, replace) recast(connected) lcolor(black) xlabel(,nogrid) ylabel(,nogrid)
+
+
+
 
 
 
