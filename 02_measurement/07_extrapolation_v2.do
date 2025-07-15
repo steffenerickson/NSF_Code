@@ -4,7 +4,7 @@ version 18
 // Set Up 
 //----------------------------------------------------------------------------//
 * Set up directories 
-local office 1 
+local office 0 
 if `office' == 1 {
 	global root 	"C:/Users/cns8vg"
 	global code 	"GitHub/NSF_Code/02_measurement"  
@@ -32,6 +32,7 @@ global rel2 = .4718875922
 rename coaching t
 keep if t == 0 | t == 1 
 drop if xc21 == . & m2_1 == . 
+save "${root}/${data}/extrapolation_sample.dta" , replace
 egen block = group(site semester)
 tab block , gen(b_)
 egen k = rowmean(k?)
@@ -73,6 +74,13 @@ ctitles("", "Equal","Utterance Frequency",) ///
 coljust(c) ///
 tex ///
 fragment ///
+replace
+
+frmttable using "${root}/${output}/resultstable5.rtf", ///
+statmat(results) ///
+substat(1) ///
+doubles(dcols) ///
+ctitles("", "Equal","Utterance Frequency",) ///
 replace
 
 //----------------------------------------------------------------------------//
@@ -130,6 +138,18 @@ coljust(c) ///
 tex ///
 fragment ///
 replace
+
+
+frmttable using "${root}/${output}/resultstable6.rtf", ///
+statmat(results) ///
+substat(1) ///
+doubles(dcols) ///
+ctitles("", "Equal","Utterance Frequency",) ///
+coljust(c) ///
+replace
+
+
+
 
 
 

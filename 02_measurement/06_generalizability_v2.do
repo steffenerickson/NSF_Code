@@ -5,7 +5,7 @@ version 18
 // Set Up 
 //----------------------------------------------------------------------------//
 * Set up directories 
-local office 1 
+local office 0
 if `office' == 1 {
 	global root 	"C:/Users/cns8vg"
 	global code 	"GitHub/NSF_Code/02_measurement"  
@@ -16,18 +16,18 @@ if `office' == 1 {
 if `office' == 0 {
 	global root     "/Users/steffenerickson/Box Sync/NSF_DR_K12/measurement"
 	global code     "Users/steffenerickson/Documents/GitHub/NSF_Code/02_measurement/code"
-	global programs "Users/steffenerickson/Documents/GitHub/stata_programs"
+	global programs "/Users/steffenerickson/Documents/GitHub/stata_programs"
 	global data     "data"
 	global output   "output"
 }
 // mvgstudy command 
-include ${programs}/mvgstudy.ado
+include "${programs}/mvgstudy.ado"
 use "${root}/${data}/manova_data.dta", clear
 
 // Limit to balanced sample 
 drop x6
 rename (task rater coaching) (t r treat)
-drop if (r == 3) | (treat == 2) | (x1 == . | x2 == . | x3 == . | x4 == . | x5 == .)
+drop if (r == 3) | (treat == 2) | (x1 == . | x2 == . | x3 == . | x4 == . | x5 == .) | time == 2
 encode participantid , gen(id)
 sort id site semester
 egen block = group(site semester)
@@ -35,7 +35,12 @@ egen p = group (id site semester)
 bysort p : gen n = _n 
 egen c  = count(n) , by(p)
 keep if c == 12
+save "${root}/${data}/gstudy_sample.dta" , replace
 drop id site semester c n participantid dupes
+
+
+
+
 
 //----------------------------------------------------------------------------//
 // Variance Components Tables 
@@ -66,7 +71,6 @@ mata results = stacked, CIs, prop
 mata results = mm_cond(results :< 0, 0, results)
 mata results1 = round(results,.001)
 
-
 // Post 
 mvgstudy (x* = p t  p#t r|t p#r|t) if time == 1
 mata t  = st_matrix("r(covcomps1)")  
@@ -90,6 +94,21 @@ mata results = stacked, CIs, prop
 mata results = mm_cond(results :< 0, 0, results)
 mata results2 = round(results,.001)
 
+
+mata st_matrix("t",t)
+mat rownames t = "x1" "x2" "x3" "x4" "x5"
+mat colnames t = "x1" "x2" "x3" "x4" "x5"
+factormat t , n(111)
+factormat t , n(111) factors(2)
+rotate, promax(1)
+rotate, promax(2)
+rotate, promax(3)
+rotate,  varimax
+rotate, promax(3)
+predict F1 F2 if time == 1 // , latent
+
+
+
 // Pre Post Table 
 mata prepostresults = results1,results2
 mata st_matrix("prepostresults",prepostresults)
@@ -104,6 +123,21 @@ coljust(c) ///
 tex ///
 fragment ///
 replace
+
+
+mata prepostresults = results1,results2
+mata st_matrix("prepostresults",prepostresults)
+mat rownames prepostresults = "p" "t" "p x t" "r | t" "p x r | t"
+frmttable using "${root}/${output}/resultstable2.rtf", ///
+statmat(prepostresults) ///
+sdec(3) ///
+ctitles("", "Pre Coursework","", "","","Post Coursework","","","" \ "", "var","lci","uci","prop","var","lci","uci","prop" )  ///
+/*title("Composite Score Variance Components ")*/ ///
+multicol(1,2,4;1,6,4)  ///
+coljust(c) ///
+replace
+
+
 
 //------------------ Covariance Component Matrices ---------------------------//
 mata st_matrix("true0",true0)
@@ -168,6 +202,19 @@ tex ///
 fragment ///
 replace
 
+mat rownames weightresults = "p" "t" "p x t" "r | t" "p x r | t"
+frmttable using  "${root}/${output}/resultstable3.rtf", ///
+statmat(weightresults) ///
+sdec(3) ///
+ctitles("", "Equal","", "","","Utterance Frequency","","","" \ "", "var","lci","uci","prop","var","lci","uci","prop" )  ///
+/*title("Composite Score Variance Components by Weighting Strategy")*/ ///
+multicol(1,2,4;1,6,4) ///
+coljust(c) ///
+replace
+
+
+
+
 // time 1 
 mvgstudy (x* = p t  p#t r|t p#r|t) if time == 1
 mata t  = st_matrix("r(covcomps1)")  
@@ -216,6 +263,20 @@ tex ///
 fragment ///
 replace
 
+
+mat rownames weightresults = "p" "t" "p x t" "r | t" "p x r | t"
+frmttable using  "${root}/${output}/resultstable4.rtf", ///
+statmat(weightresults) ///
+sdec(3) ///
+ctitles("", "Equal","", "","","Utterance Frequency","","","" \ "", "var","lci","uci","prop","var","lci","uci","prop" )  ///
+/*title("Composite Score Variance Components by Weighting Strategy")*/ ///
+multicol(1,2,4;1,6,4) ///
+coljust(c) ///
+replace
+
+
+
+
 //----------------------------------------------------------------------------//
 // Reliability Figures for weighting strategies
 //----------------------------------------------------------------------------//
@@ -261,13 +322,14 @@ frame comp_rel {
 				(scatter g task if weight == `i' & rater == 5 , connect(l)) ///
 				(scatter g task if weight == `i' & rater == 6 , connect(l)) , ///
 				legend(order(1 "1 Rater" 2 "2 Raters" 3 "3 Raters" 4 "4 Raters" 5 "5 Raters" 6 "6 Raters")  pos(5) ring(0) rows(1) size(small)) ///
-		xtitle("Tasks") ytitle("Generalizability Coefficient") yscale(range(.1(.1)1)) ylabel(.1(.1)1) ///
-		title("`name'", size(small)) name(g`i' , replace)
+		xtitle("Tasks") ytitle("Generalizability Coefficient") yscale(range(.1(.1)1)) ylabel(.1(.1)1, nogrid) xlabel(,nogrid) ///
+		title("`name'", size(small)) name(g`i' , replace) yline(.80)
 		
 	}
 	
-	grc1leg g1 g2, legendfrom(g1) title("Reliability Under Different Measurement Procedures by Weighting Strategy (Pre)" , size(medium)) rows(1) name(g1, replace) altshrink
+	grc1leg2 g1 g2, legendfrom(g1) title("Reliability Under Different Measurement Procedures by Weighting Strategy (Pre)" , size(medium)) rows(1) name(g1, replace) altshrink
 	graph export "${root}/${output}/dstudy0.png" , replace
+	graph export "${root}/${output}/dstudy0.jpg" , replace
 }
 frame drop comp_rel
 
@@ -312,13 +374,14 @@ frame comp_rel {
 				(scatter g task if weight == `i' & rater == 5 , connect(l)) ///
 				(scatter g task if weight == `i' & rater == 6 , connect(l)) , ///
 				legend(order(1 "1 Rater" 2 "2 Raters" 3 "3 Raters" 4 "4 Raters" 5 "5 Raters" 6 "6 Raters")  pos(5) ring(0) rows(1) size(small)) ///
-		xtitle("Tasks") ytitle("Generalizability Coefficient") yscale(range(.1(.1)1)) ylabel(.1(.1)1) ///
-		title("`name'", size(small)) name(g`i' , replace)
+		xtitle("Tasks") ytitle("Generalizability Coefficient") yscale(range(.1(.1)1)) ylabel(.1(.1)1, nogrid) xlabel(,nogrid)  ///
+		title("`name'", size(small)) name(g`i' , replace) yline(.80)
 		
 	}
 	
-	grc1leg g1 g2, legendfrom(g1) title("Reliability Under Different Measurement Procedures by Weighting Strategy (Post)" , size(medium)) rows(1) name(g1, replace) altshrink
+	grc1leg2 g1 g2, legendfrom(g1) title("Reliability Under Different Measurement Procedures by Weighting Strategy (Post)" , size(medium)) rows(1) name(g1, replace) altshrink
 	graph export "${root}/${output}/dstudy1.png" , replace
+	graph export "${root}/${output}/dstudy1.jpg" , replace
 }
 frame drop comp_rel
 

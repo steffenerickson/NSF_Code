@@ -20,9 +20,19 @@ frame change simrubric1
 
 * Data set up 
 keep x1-x6 site semester participantid task dc time coaching
-recode task (4 = 1) (5 = 2) (6 = 3)
+recode task (4 = 1) (5 = 2) (6 = 3) (7 = 4)
 drop if task == .
+
+preserve
+keep if time == 2
+collapse x* , by(coaching participantid site semester dc task time)
+tempfile data 
+save `data'
+restore
 drop if time == 2
+append using `data '
+
+tab task time 
 egen dupes = tag(participantid site semester time dc task)
 tab dupes
 drop if dupes == 0
@@ -31,6 +41,11 @@ drop if dupes == 0
 reshape wide x1-x6 , i(participantid site semester time dc) j(task)
 reshape wide x?? , i(participantid site semester dc) j(time)
 reshape wide x???   , i(participantid site semester) j(dc)
+
+foreach var of varlist x* {
+	sum `var'
+	if `r(N)' == 0 drop `var'
+}
 
 merge 1:1 participantid site semester using "${root}/${data}/aidata.dta"
 drop _merge
@@ -61,6 +76,8 @@ foreach v of var x* {
 }
 reshape long `varlist', i(participantid site semester rater time) j(task)
 
+drop if time  != 2 & task == 4
+drop if rater == 3 & task == 4
 
 label values rater none
 

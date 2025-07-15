@@ -10,13 +10,13 @@ global programs "/Users/steffenerickson/Documents/GitHub/stata_programs"
 global data     "measurement/data"
 global output   "skill_development/output"
 include ${programs}/mvgstudy.ado
-include ${programs}/permutationsandcombinations.do
+//include ${programs}/permutationsandcombinations.do
 
 
 use "${root}/${data}/manova_data.dta", clear
 rename (task rater coaching) (t r treat)
 label values treat . 
-keep if r != 3 & time == 1
+keep if r != 3 & time != 0 
 drop x6 
 mkf covs 
 frame covs: use "${root}/${data}/simse_validity.dta", clear
@@ -31,13 +31,80 @@ sort id site semester
 egen block = group(site semester)
 egen p = group (id site semester )
 collapse x* k* m*, by(p treat block )
-drop if (x1 == . & x2 == . & x3 == . & x4 == . & x5 == .)
+drop if (x1 == . & x2 == . & x3 == . & x4 == . & x5 == . )
+egen k = rowmean(k?)
+egen m = rowmean(m?)
+
+
+keep if treat != 2
+corr x? m k t , cov 
+mat c1 = r(C)
+mata Phi0 = st_matrix("c1")
+mata Inv = luinv(Phi0)
+mata D = diag(1:/sqrt(diagonal(Inv)))
+mata R = - D * Inv * D
+mata _diag(R,J(rows(R),1,1))
+mata R
+
+
+
+
+
+
+
+
+
+
+
+
+keep if treat != 2
+pcorr x1 x2 x3 x4 x5 x6
+pcorr x2 x1 x3 x4 x5 x6
+pcorr x3 x1 x2 x4 x5 x6
+pcorr x4 x1 x2 x3 x5 x6
+pcorr x5 x1 x2 x3 x4 x6
+
+pcorr k x1 x2 x3 x4 x5
+pcorr k x2 x1 x3 x4 x5 x6
+pcorr k x3 x1 x2 x4 x5 x6
+pcorr k x4 x1 x2 x3 x5 x6
+pcorr k x5 x1 x2 x3 x4 x6
+
+
+
 
 sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4) , cov(e.x1*e.x2)
 sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4) , cov(e.x1*e.x3)
 sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4) , cov(e.x1*e.x4)
 sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4) , cov(e.x1*e.x5)
 sem (F1 -> x1 x2@1 x5) (F2 -> x3 x4) , cov(e.x3*e.x5)
+
+sem (K -> k?) (MM -> x1 x2@1 x5 x3 x4) (K -> MM) , cov(e.x3*e.x4) standardized
+
+sem (K -> k?) (MM -> x1 x2@1 x5 x3 x4) , cov(e.x3*e.x4) standardized
+predict K MM , latent 
+scatter MM K  
+
+
+sem (K -> k?) 
+predict K2 , latent 
+sem (MM -> x1 x2@1 x5 x3 x4) , cov(e.x3*e.x4) standardized
+predict MM2 , latent 
+twoway (scatter MM2 K2 if treat ==0) (scatter MM2 K2 if treat == 1)
+
+
+sem (K -> k?) (F1 -> x1 x2@1 x5) (K -> F1)
+estat eqgof 
+
+sem (K -> k?) (F1 -> x1 x2@1 x5) (K -> F1)
+estat eqgof 
+
+sem (K -> k?) (F1 -> x2@1) (K -> F1) , var(e.x2@0)
+estat eqgof 
+
+
+
+
 
 sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) 
 estimates store m1
@@ -48,8 +115,14 @@ lrtest m1 m2
 
 sem (m2 <- t)
 
-sem (K -> k?) (F1 -> x1 x2@1 x5) (F2 -> x3 x4) , standardized
 
+
+include /Users/steffenerickson/Desktop/model_implied_intervention_effects_v3.ado
+
+drop if treat == 2
+sem (K -> k1@1 k?) (F1 -> x1 x2@1 x5 x3 x4) (F1 <- K)  , group(treat) means(K@0) ginvariant(mcoef scoef)
+estimates store model 
+flowcheck , estimates(model) z(treat)
 
 
 foreach v of varlist k? x? {

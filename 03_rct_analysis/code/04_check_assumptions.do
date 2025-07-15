@@ -108,3 +108,90 @@ replace
 
 
 
+frame change fr3 
+collapse simse $covariates, by(t id block)
+egen efficacy = rowmean(d126*)
+global covariates white male d162 d167 pre_simse d921 efficacy d132 d107  
+capture matrix drop results
+foreach cov of global covariates { 
+	sum `cov' if t == 0 
+	local cm = r(mean)
+	regress `cov' i.t i.block 
+	local tm = `cm' + r(table)[1,2]
+	mat results = (nullmat(results)\(`cm',., `tm',., r(table)[1,2],r(table)[4,2])) 
+}
+
+mat rownames results  = "% White" "% Male" "Age" "College GPA" "SimSe Pretest" "Math Knowledge for Teaching" "Self Efficacy" "Beliefs about Teaching" "Prior Experience"
+mat colnames results = "Control" "Treatment" "Difference"
+matrix dcols = (0,0,0,1)
+frmttable using "${root}/${output}/table4.rtf" , ///
+statmat(results) ///
+substat(1) ///
+ctitles("", "Control Mean","Treatment Mean","Difference") ///
+note("Joint test: F(9,144) = 0.45, Prob > F = 0.9023") ///
+title("Baseline Balance Table") ///
+coljust(c) ///
+replace
+
+//----------------------------------------------------------------------------//
+// Sample Characteristics
+//----------------------------------------------------------------------------//
+
+capture matrix drop results
+foreach cov of global covariates { 
+	tempname temp 
+	forvalues i = 1/4 {
+		sum `cov' if block == `i' 
+		matrix `temp' = (nullmat(`temp') , r(mean))
+	}
+	sum `cov' 
+	matrix `temp' = r(mean), `temp' 
+	mat results = (nullmat(results) \ `temp' ) 
+}
+
+tempname temp2
+forvalues i = 1/4 {
+	qui sum pre_simse if block == `i' 
+	matrix `temp2' = (nullmat(`temp2') , r(N))
+}
+qui sum pre_simse
+matrix `temp2' = r(N) , `temp2' 
+
+mat li `temp2'
+
+matrix results = results \ `temp2'
+
+
+mat rownames results  = "% White" "% Male" "Age" "College GPA" "SimSe Pretest" "Math Knowledge for Teaching" "Self Efficacy" "Beliefs about Teaching" "Prior Experience" "N"
+mat colnames results = "Overall" "Site 1 Fall" "Site 1 Spring" "Site 2 Fall" "Site 2 Spring"
+frmttable using "${root}/${output}/table9.rtf" , ///
+statmat(results) ///
+title("Sample Characteristics") ///
+coljust(c) ///
+replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -19,7 +19,7 @@ foreach file of local filelist {
 	local++i
 }
 
-global covariates pre_simse d162 d167 d126_1 d126_2 d126_3 d126_4 d126_5 d132 d142 d156_1 d156_2 d156_3 d156_4 d156_5 d921 d107 white male parentnotteach parentcollege 
+global covariates pre_simse d162 d167 d126_1 d126_2 d126_3 d126_4 d126_5 d132 d142 d156_1 d156_2 d156_3 d156_4 d156_5 d921 d107 white male 
 
 * Models
 // ---- Simse
@@ -37,7 +37,6 @@ regress qci_s i.t i.block i.rater i.segment $covariates *_im, vce(cluster id)
 // ---- MQI
 frame change fr2
 regress mqi_s i.t i.block i.rater i.segment $covariates *_im, vce(cluster id)
-
 
 
 
